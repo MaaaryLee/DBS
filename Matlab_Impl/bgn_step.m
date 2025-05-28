@@ -8,10 +8,12 @@ function [terminated, sgis] = bgn_step(freq, amp, sim_time)
     % to convert back to old impl, change freq --> action and amp --> 300
     dbs = zeros(1,sim_time);
     if freq > 0
-        pulse = amp * ones(1,30);
+        pulse_ano = amp * ones(1,6);
+        pulse_cat = amp * -1 * ones(1, 6);
         skip_size = int64(1000/freq) * 100;
         for p=0:1:int64(freq/5)
-            dbs(p*skip_size+1:p*skip_size+30) = pulse;
+            dbs(p*skip_size+1:p*skip_size+6) = pulse_ano;
+            dbs(p*skip_size+7:p*skip_size+12) = pulse_cat;
         end
     end
 
@@ -129,6 +131,59 @@ function [terminated, sgis] = bgn_step(freq, amp, sim_time)
     else 
         terminated = 0;
     end
+
+    % calculating error index, 85% sure it works
+    % e=zeros(1,n);
+
+    % b1 = 0;
+    % b2 = 0;
+    % for m=1:length(timespike)
+    %     if timespike(m) >= i-sim_time
+    %         b1 = m;
+    %         break;
+    %     end 
+    % end
+    % for m=1:length(timespike)
+    %     if timespike(m) < i
+    %         b2 = m;
+    %     end
+    % end
+
+    % for m=1:n
+    %     a = 0;
+    %     b = 0;
+        
+    %     compare=[];
+    %     k=1;
+    %     for j=i-sim_time:i
+    %         if vth(m,j)<-40 && vth(m,j+1)>-40
+    %             compare(k)=t(j);
+    %             k=k+1;
+    %         end
+    %     end
+    %     for p=b1:b2
+    %         if p~=b2
+    %             a=find(compare>=timespike(p) & compare<timespike(p)+25);
+    %             b=find(compare>=timespike(p)+25 & compare<timespike(p+1));
+    %         elseif b2==length(timespike)
+    %             a=find(compare>=timespike(p) & compare<tmax);
+    %             b=[];
+    %         else
+    %             a=find(compare>=timespike(p) & compare<timespike(p+1));
+    %             b=find(compare>=timespike(p)+25 & compare<timespike(p+1));
+    %         end
+    %         if isempty(a)
+    %             e(m)=e(m)+1;
+    %         elseif size(a,2)>1
+    %             e(m)=e(m)+1;
+    %         end
+    %         if ~isempty(b)
+    %             e(m)=e(m)+length(b);
+    %         end
+    %     end
+
+    % end
+    % er=mean(e/(b2-b1+1));
 
     save('bgn_vars.mat', 'pd','tmax','t','dt', 'n' ,'v1' ,'v2' ,'v3' ,'v4' ,'r' ,'Istim', 'Cm' ,'gl' ,'El' ,'gna' ,'Ena' ,'gk' ,'Ek' ,'gt' ,'Et' ,'gca' ,'Eca' ,'gahp' ,'k1' ,'kca' ,'A' ,'B' ,'the', 'gsyn', 'Esyn' ,'tau' ,'gpeak', 'gpeak1', 'vth' ,'vsn' ,'vge' ,'vgi' ,'S2' ,'S21' ,'S3' ,'S31' ,'S32','S4' ,'Z2' ,'Z4' ,'N2' ,'N3' ,'N4' ,'H1' ,'H2' ,'H3' ,'H4' ,'R1' ,'R2' ,'R3' ,'R4' ,'CA2' ,'CA3' ,'CA4', 'C2', 'i', 'sgis');
 

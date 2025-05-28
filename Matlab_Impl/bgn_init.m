@@ -43,6 +43,7 @@ function bgn_init(pd,tmax)
     end
     
     
+    
     addpath("gating\");
     
     Cm=1;
