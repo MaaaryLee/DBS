@@ -1,7 +1,7 @@
 """
-BGN implemented with most computation done in Matlab engine.
-Wrapped in OpenAI gymnasium env, also does state/reward calculation
-in Python
+BGN implemention of https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=10684783&tag=1
+with most computation done in Matlab engine. Wrapped in OpenAI gymnasium env, also does 
+state/reward calculation in Python
 """
 
 import gymnasium as gym
