@@ -4,7 +4,7 @@ function bgn_init(pd,tmax)
     % seed = double(seed);
     dt=0.01; %timestep (ms)
     t=0:dt:tmax;
-    n=10; 
+    n=10;
     % rng(seed);
     
     v1=-62+randn(n,1)*5;

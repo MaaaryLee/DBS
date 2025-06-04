@@ -21,7 +21,7 @@ class BGN_MC(gym.Env):
         self.action_space = gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32), high=np.array([1.0, 1.0], dtype=np.float32), dtype=np.float32)
 
         self.tmax = tmax
-        self.past_sgi = 0
+        self.past_sgis = 0
 
     def reset(self, pd=True, seed=None, options=None):
         super().reset(seed=seed)
@@ -32,9 +32,9 @@ class BGN_MC(gym.Env):
         for i in range(len(self.Istim)-1): 
             if self.Istim[i] == 0 and self.Istim[i+1] != 0: self.smc_spike_times.append(i+1)
         self.smc_spike_times = np.array(self.smc_spike_times)
-        self.past_ei = 0
+        self.past_sgis = 0.5
         observation, reward, terminated, truncated, info = self.step()
-        self.past_ei = info['r3']
+        self.past_sgis = info['r3']
         return observation, info
 
     def step(self, action=np.array([-1.0, -1.0]), sim_time=10000):
@@ -44,31 +44,28 @@ class BGN_MC(gym.Env):
         
         terminated, _ = eng.bgn_step(freq, amp, sim_time, nargout=2)
 
-        current_ei = self.calculate_ei()
-        r1_min = -1.55 
-        r1_max = 1.3
-        r1 = ((self.past_ei - current_ei)-r1_min)/(r1_max-r1_min)
+        sgis = scipy.io.loadmat('C:/Users/ncart/Programming/DBS/Matlab_Impl/bgn_vars.mat')['sgis']
+        sgis_min = 1082.0999226306508
+        sgis_max = 3506.499645178415 
+        current_sgis_norm = (np.sum(np.average(np.abs(np.fft.fft(sgis)), axis=0)[1:20]) - sgis_min)/(sgis_max-sgis_min)
+        r1_min = 0
+        r1_max = 1
+        r1 = ((self.past_sgis - current_sgis_norm)-r1_min)/(r1_max-r1_min)
 
-        r2_max = 1.05356537529
-        r2 = np.sqrt((freq/10 * amp * 0.000012))/r2_max
-
-        r3_min = 0
-        r3_max = 2.2
-        r3 = (current_ei-r3_min)/(r3_max-r3_min)
+        r2_max = 1
+        # r2 = np.sqrt((freq/10 * amp * 0.000030))/r2_max
+        theta = 0.85
+        r2 = (theta * (freq/185) + (1-theta) * amp/5000)/r2_max
+ 
+        r3 = current_sgis_norm
 
         r4 = 1 if r1==0 and r2==0 and r3==0 else 0
 
-        self.past_ei = current_ei
+        self.past_sgis = current_sgis_norm
 
-        alpha = 1.2
-        beta = -0.8
-        gamma = -0.5
-        delta = 0.5
+        epsilon = 0.68
+        reward = epsilon * -r3 + (1-epsilon) * -r2
 
-        reward = alpha*r1 + beta*r2 + gamma*r3 + delta*r4
-        reward_scaled = reward/(alpha + beta + gamma + delta)
-
-        sgis = scipy.io.loadmat('C:/Users/ncart/Programming/DBS/Matlab_Impl/bgn_vars.mat')['sgis']
         vgi = scipy.io.loadmat('C:/Users/ncart/Programming/DBS/Matlab_Impl/bgn_vars.mat')['vgi']
         vsn = scipy.io.loadmat('C:/Users/ncart/Programming/DBS/Matlab_Impl/bgn_vars.mat')['vsn']
         i = scipy.io.loadmat('C:/Users/ncart/Programming/DBS/Matlab_Impl/bgn_vars.mat')['i'].flatten()[0]
@@ -101,7 +98,7 @@ class BGN_MC(gym.Env):
         SampEn = (np.average([antropy.sample_entropy(vsn[n][i-sim_time:i]) for n in range(10)]) - SampEn_min)/(SampEn_max - SampEn_min)
         observation = np.array((sd, A_norm, M_norm, C_norm, Pb, SampEn))
 
-        return observation, reward_scaled, bool(terminated), False, {'r1': r1, 'r2': r2, 'r3': r3, 'r4': r4}
+        return observation, reward, bool(terminated), False, {'r1': r1, 'r2': r2, 'r3': r3, 'r4': r4}
     
 
     def calculate_ei(self):
