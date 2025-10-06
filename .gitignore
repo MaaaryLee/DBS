@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Logs & artifacts
+powermetrics_*.log
+*.log
+*.npy
+
+# Models (heavy artifacts)
+models/**/*.zip
+models/policies/*.pth
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
