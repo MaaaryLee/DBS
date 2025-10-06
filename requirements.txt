@@ -1,0 +1,7 @@
+torch>=2.3.0
+numpy==2.0.2
+stable-baselines3==2.7.0
+matlabengine==24.2.1
+antropy
+scipy
+gymnasium
