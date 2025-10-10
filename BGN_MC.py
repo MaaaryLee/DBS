@@ -10,10 +10,10 @@ import scipy.io
 import matlab.engine
 import antropy
 eng = matlab.engine.start_matlab()
-eng.cd('C:/Users/ncart/Programming/PerCom2025')
+eng.cd('C:/Users/ncart/Programming/PerCom2025') # CHANGE TO YOUR PROJECT DIRECTORY
 
 class BGN_MC(gym.Env):
-    def __init__(self, mode, tmax=1000, pd=True):
+    def __init__(self, mode='hvgi', tmax=1000, pd=True):
         self.mode = mode
         if pd: self.pd = 1
         else: self.pd = 0
@@ -25,7 +25,6 @@ class BGN_MC(gym.Env):
         elif mode == 'hsgi':
             self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(4,), dtype=np.float64)
 
-
         self.action_space = gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32), high=np.array([1.0, 1.0], dtype=np.float32), dtype=np.float32)
 
         self.tmax = tmax
@@ -34,12 +33,6 @@ class BGN_MC(gym.Env):
     def reset(self, pd=True, seed=None, options=None):
         super().reset(seed=seed)
         eng.bgn_init(self.pd, self.tmax, nargout=0)
-
-        self.smc_spike_times = []
-        self.Istim = scipy.io.loadmat('bgn_vars.mat')['Istim'].flatten()
-        for i in range(len(self.Istim)-1): 
-            if self.Istim[i] == 0 and self.Istim[i+1] != 0: self.smc_spike_times.append(i+1)
-        self.smc_spike_times = np.array(self.smc_spike_times)
         observation, reward, terminated, truncated, info = self.step()
         return observation, info
 
@@ -52,20 +45,15 @@ class BGN_MC(gym.Env):
         sgis = scipy.io.loadmat('bgn_vars.mat')['sgis']
         sgis_min = 1082.0999226306508
         sgis_max = 3506.499645178415 
-        current_sgis_norm = (np.sum(np.average(np.abs(np.fft.fft(sgis)), axis=0)[1:20]) - sgis_min)/(sgis_max-sgis_min)
+        r1 = (np.sum(np.average(np.abs(np.fft.fft(sgis)), axis=0)[1:20]) - sgis_min)/(sgis_max-sgis_min)
   
-
         r2_max = 1
         theta = 0.85
         r2 = (theta * (freq/185) + (1-theta) * amp/5000)/r2_max
  
-        r3 = current_sgis_norm
-
         epsilon = 0.68
-        reward = epsilon * -r3 + (1-epsilon) * -r2
-
-        # vgi = scipy.io.loadmat('bgn_vars.mat')['vgi']
-        
+        reward = epsilon * -r1 + (1-epsilon) * -r2
+                
         i = scipy.io.loadmat('bgn_vars.mat')['i'].flatten()[0]
         observation = None
 
@@ -161,4 +149,4 @@ class BGN_MC(gym.Env):
             SampEn = (np.average([antropy.sample_entropy(vsn[n][i-sim_time:i:2]) for n in range(10)]) - SampEn_min)/(SampEn_max - SampEn_min)
             observation = np.array((sd, A_norm, M_norm, C_norm, Pb, SampEn))
 
-        return observation, reward, bool(terminated), False, {'r2': r2, 'r3': r3}
+        return observation, reward, bool(terminated), False, {'r1': r1, 'r2': r2}
