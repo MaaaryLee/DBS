@@ -5,3 +5,8 @@ matlabengine==24.2.1
 antropy
 scipy
 gymnasium
+matplotlib
+scikit-learn
+tensorboard
+onnx>=1.19.0
+psutil
