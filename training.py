@@ -1,4 +1,4 @@
-from Matlab_Impl import BGN_MC
+from BGN_MC import BGN_MC
 from stable_baselines3 import TD3
 import os
 import torch
@@ -16,7 +16,7 @@ if not os.path.exists(logdir): os.makedirs(logdir)
 
 policy_kwargs = dict(activation_fn=torch.nn.ReLU, net_arch=dict(pi=[h1, h2], qf=[h1, h2]))
 
-env = BGN_MC.BGN_MC(tmax=1100)
+env = BGN_MC(tmax=1100, pd=True)
 
 model = TD3('MlpPolicy', env, verbose=1, policy_kwargs=policy_kwargs, tensorboard_log=logdir, learning_rate=0.0001)
 

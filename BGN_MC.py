@@ -9,8 +9,12 @@ import numpy as np
 import scipy.io
 import matlab.engine
 import antropy
+import os
+
+# Get the current workspace directory dynamically
+workspace_dir = os.path.dirname(os.path.abspath(__file__))
 eng = matlab.engine.start_matlab()
-eng.cd('C:/Users/ncart/Programming/PerCom2025') # CHANGE TO YOUR PROJECT DIRECTORY
+eng.cd(workspace_dir)
 
 class BGN_MC(gym.Env):
     def __init__(self, mode='hvgi', tmax=1000, pd=True):
