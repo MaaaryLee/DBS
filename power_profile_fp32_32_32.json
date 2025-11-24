@@ -1,0 +1,25 @@
+{
+  "mode": "fp32",
+  "architecture": "32x32",
+  "duration_s": 30,
+  "cpu_stats": {
+    "samples": 136,
+    "mean_cpu_percent": 236.3544117647059,
+    "std_cpu_percent": 118.26622439850487,
+    "min_cpu_percent": 86.0,
+    "max_cpu_percent": 866.5,
+    "p50_cpu_percent": 220.0,
+    "p90_cpu_percent": 379.25
+  },
+  "timing_stats": {
+    "duration_s": 30.0007426738739,
+    "iterations": 160429,
+    "mean_inference_time_ms": 0.18600597375290598,
+    "std_inference_time_ms": 0.38936392520452806,
+    "min_inference_time_ms": 0.0,
+    "max_inference_time_ms": 1.5063285827636719,
+    "p50_inference_time_ms": 0.0,
+    "p90_inference_time_ms": 0.9999275207519531,
+    "throughput_inf_per_sec": 5347.500951691751
+  }
+}
