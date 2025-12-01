@@ -1,63 +1,74 @@
 """
 Comprehensive quantization evaluation script.
-Compares FP32 vs INT8 models on accuracy, size, performance, and power metrics.
+Compares FP32 vs INT8 actor modules on accuracy, size, performance, and power metrics.
 """
 
+import argparse
+import json
 import os
 import time
-import json
-import numpy as np
-import torch
+from pathlib import Path
+
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error
-from stable_baselines3 import TD3
-from BGN_MC import BGN_MC
-from torch.ao.quantization import quantize_dynamic
+import numpy as np
 import scipy.io
+import torch
+from sklearn.metrics import mean_squared_error
+
+import quantize_model  # noqa: F401 (register TD3Actor classes)
+
+VARIANT_SUFFIX = {
+    "dynamic_int8": "dynamic",
+    "static_int8": "static",
+}
 
 
-def load_models(h1=32, h2=32, model_timesteps=2500):
+def _create_env(tmax=1100, pd=True):
+    from BGN_MC import BGN_MC
+
+    return BGN_MC(tmax=tmax, pd=pd)
+
+
+def load_models(h1=32, h2=32, variant="static_int8", with_env=True):
     """
-    Load FP32 and INT8 models.
-    
+    Load FP32 and quantized actors.
+
     Returns:
-        Tuple of (fp32_policy, int8_policy, env)
+        Tuple of (fp32_actor, int8_actor, env)
     """
-    model_path = f'models/TD3_{h1}_{h2}/{model_timesteps}.zip'
-    qpolicy_path = f'models/policies/qpolicy_{h1}_{h2}.pth'
-    policy_path = f'models/policies/policy_{h1}_{h2}.pth'
-    
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model not found: {model_path}")
-    if not os.path.exists(qpolicy_path):
-        raise FileNotFoundError(f"Quantized policy not found: {qpolicy_path}")
-    
-    # Load FP32 model
-    env = BGN_MC(tmax=1100, pd=True)
-    model = TD3.load(model_path, env=env)
-    fp32_policy = model.policy.to(torch.device('cpu'))
-    fp32_policy.eval()
-    
-    # Load INT8 policy
-    policy_kwargs = dict(
-        activation_fn=torch.nn.ReLU,
-        net_arch=dict(pi=[h1, h2], qf=[h1, h2])
-    )
-    dummy_model = TD3('MlpPolicy', env, verbose=0, policy_kwargs=policy_kwargs, learning_rate=0.0001)
-    int8_policy = quantize_dynamic(dummy_model.policy.to(torch.device('cpu')), dtype=torch.qint8)
-    int8_policy.load_state_dict(torch.load(qpolicy_path, weights_only=False))
-    int8_policy.eval()
-    
-    return fp32_policy, int8_policy, env
+    import sys
+
+    # Ensure pickled modules saved under __main__ can be deserialized.
+    sys.modules['__main__'].TD3Actor = quantize_model.TD3Actor
+    sys.modules['__main__'].QuantizableTD3Actor = quantize_model.QuantizableTD3Actor
+
+    suffix = VARIANT_SUFFIX[variant]
+    fp32_path = Path(f"models/policies/actor_fp32_{h1}_{h2}.pt")
+    int8_path = Path(f"models/policies/actor_int8_{suffix}_{h1}_{h2}.pt")
+
+    if not fp32_path.exists():
+        raise FileNotFoundError(f"FP32 actor checkpoint not found: {fp32_path}")
+    if not int8_path.exists():
+        raise FileNotFoundError(f"Quantized actor checkpoint not found: {int8_path}")
+
+    fp32_actor = torch.load(fp32_path, map_location="cpu")
+    fp32_actor.eval()
+
+    int8_actor = torch.load(int8_path, map_location="cpu")
+    int8_actor.eval()
+
+    env = _create_env(tmax=1100, pd=True) if with_env else None
+    return fp32_actor, int8_actor, env
 
 
-def measure_model_size(h1=32, h2=32):
+def measure_model_size(h1=32, h2=32, variant="static_int8"):
     """Measure model file sizes."""
-    policy_path = f'models/policies/policy_{h1}_{h2}.pth'
-    qpolicy_path = f'models/policies/qpolicy_{h1}_{h2}.pth'
+    suffix = VARIANT_SUFFIX[variant]
+    policy_path = Path(f'models/policies/actor_fp32_{h1}_{h2}.pt')
+    qpolicy_path = Path(f'models/policies/actor_int8_{suffix}_{h1}_{h2}.pt')
     
-    fp32_size = os.path.getsize(policy_path) / (1024 * 1024)  # MB
-    int8_size = os.path.getsize(qpolicy_path) / (1024 * 1024)  # MB
+    fp32_size = policy_path.stat().st_size / (1024 * 1024)  # MB
+    int8_size = qpolicy_path.stat().st_size / (1024 * 1024)  # MB
     reduction = (1 - int8_size / fp32_size) * 100
     
     return {
@@ -107,7 +118,7 @@ def measure_fidelity(fp32_policy, int8_policy, states_path='states_eval.npy'):
 
 def collect_calibration_states(num_states=1000):
     """Collect calibration states from the environment."""
-    env = BGN_MC(tmax=1100, pd=True)
+    env = _create_env(tmax=1100, pd=True)
     states = []
     
     for _ in range(num_states):
@@ -182,7 +193,7 @@ def evaluate_performance(policy, env, num_episodes=5, model_name="Model"):
             observation = env.reset()[0]
         except Exception as e:
             print(f"  [WARNING] Reset failed, recreating environment: {e}")
-            env = BGN_MC(tmax=1100, pd=True)
+            env = _create_env(tmax=1100, pd=True)
             observation = env.reset()[0]
         
         terminated = False
@@ -320,19 +331,24 @@ def create_comparison_plots(results, output_dir='quantization_eval_plots'):
     print(f"[OK] Plots saved to {output_dir}/")
 
 
-def main():
+def main(variant="static_int8", num_episodes=5, output_dir="quantization_eval_latest", skip_env=False):
     print("=" * 70)
     print("Comprehensive Quantization Evaluation")
     print("=" * 70)
     
     h1, h2 = 32, 32
-    model_timesteps = 2500
-    num_episodes = 5
-    
+    output_dir = Path(output_dir)
+    plots_dir = output_dir / "plots"
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
     # Load models
     print("\n1. Loading models...")
     try:
-        fp32_policy, int8_policy, env = load_models(h1=h1, h2=h2, model_timesteps=model_timesteps)
+        fp32_policy, int8_policy, env = load_models(
+            h1=h1, h2=h2, variant=variant, with_env=not skip_env
+        )
         print("   [OK] Models loaded successfully")
     except Exception as e:
         print(f"   [X] ERROR loading models: {e}")
@@ -342,7 +358,7 @@ def main():
     
     # Measure model sizes
     print("\n2. Measuring model sizes...")
-    size_results = measure_model_size(h1=h1, h2=h2)
+    size_results = measure_model_size(h1=h1, h2=h2, variant=variant)
     print(f"   FP32 size: {size_results['fp32_size_mb']:.4f} MB")
     print(f"   INT8 size: {size_results['int8_size_mb']:.4f} MB")
     print(f"   Size reduction: {size_results['reduction_percent']:.2f}%")
@@ -364,36 +380,44 @@ def main():
     print(f"   Speedup: {speedup:.2f}x")
     
     # Evaluate performance
-    print(f"\n5. Evaluating performance ({num_episodes} episodes)...")
-    print("   FP32 model...")
-    fp32_perf = evaluate_performance(fp32_policy, env, num_episodes=num_episodes, model_name="FP32")
-    print("   INT8 model...")
-    int8_perf = evaluate_performance(int8_policy, env, num_episodes=num_episodes, model_name="INT8")
-    
-    print("\n   FP32 Performance:")
-    if fp32_perf['mean_sgi_intensity']:
-        print(f"     SGi Intensity: {fp32_perf['mean_sgi_intensity']:.2f}")
-    if fp32_perf['mean_p_beta']:
-        print(f"     P-beta: {fp32_perf['mean_p_beta']:.2f}")
-    if fp32_perf['mean_frequency']:
-        print(f"     Mean Frequency: {fp32_perf['mean_frequency']:.2f} Hz")
-    if fp32_perf['mean_amplitude']:
-        print(f"     Mean Amplitude: {fp32_perf['mean_amplitude']:.2f} mA")
-    
-    print("\n   INT8 Performance:")
-    if int8_perf['mean_sgi_intensity']:
-        print(f"     SGi Intensity: {int8_perf['mean_sgi_intensity']:.2f}")
-    if int8_perf['mean_p_beta']:
-        print(f"     P-beta: {int8_perf['mean_p_beta']:.2f}")
-    if int8_perf['mean_frequency']:
-        print(f"     Mean Frequency: {int8_perf['mean_frequency']:.2f} Hz")
-    if int8_perf['mean_amplitude']:
-        print(f"     Mean Amplitude: {int8_perf['mean_amplitude']:.2f} mA")
+    if skip_env:
+        print("\n5. Skipping environment performance evaluation (--skip-env).")
+        fp32_perf = None
+        int8_perf = None
+    else:
+        print(f"\n5. Evaluating performance ({num_episodes} episodes)...")
+        print("   FP32 model...")
+        fp32_perf = evaluate_performance(
+            fp32_policy, env, num_episodes=num_episodes, model_name="FP32"
+        )
+        print("   INT8 model...")
+        int8_perf = evaluate_performance(
+            int8_policy, env, num_episodes=num_episodes, model_name="INT8"
+        )
+        
+        print("\n   FP32 Performance:")
+        if fp32_perf['mean_sgi_intensity']:
+            print(f"     SGi Intensity: {fp32_perf['mean_sgi_intensity']:.2f}")
+        if fp32_perf['mean_p_beta']:
+            print(f"     P-beta: {fp32_perf['mean_p_beta']:.2f}")
+        if fp32_perf['mean_frequency']:
+            print(f"     Mean Frequency: {fp32_perf['mean_frequency']:.2f} Hz")
+        if fp32_perf['mean_amplitude']:
+            print(f"     Mean Amplitude: {fp32_perf['mean_amplitude']:.2f} mA")
+        
+        print("\n   INT8 Performance:")
+        if int8_perf['mean_sgi_intensity']:
+            print(f"     SGi Intensity: {int8_perf['mean_sgi_intensity']:.2f}")
+        if int8_perf['mean_p_beta']:
+            print(f"     P-beta: {int8_perf['mean_p_beta']:.2f}")
+        if int8_perf['mean_frequency']:
+            print(f"     Mean Frequency: {int8_perf['mean_frequency']:.2f} Hz")
+        if int8_perf['mean_amplitude']:
+            print(f"     Mean Amplitude: {int8_perf['mean_amplitude']:.2f} mA")
     
     # Compile results
     results = {
         'architecture': f'{h1}x{h2}',
-        'model_timesteps': model_timesteps,
         'size': size_results,
         'fidelity': {
             'mse': fidelity_results['mse'],
@@ -409,7 +433,7 @@ def main():
         'performance': {
             'fp32': fp32_perf,
             'int8': int8_perf
-        }
+        } if not skip_env else None
     }
     
     # Add action arrays if available (for plotting)
@@ -419,10 +443,10 @@ def main():
     
     # Create plots
     print("\n6. Creating comparison plots...")
-    create_comparison_plots(results)
+    create_comparison_plots(results, output_dir=str(plots_dir))
     
     # Save results
-    output_file = f'quantization_eval_results_{h1}_{h2}.json'
+    output_file = output_dir / f'quantization_eval_results_{variant}_{h1}_{h2}.json'
     with open(output_file, 'w') as f:
         json.dump(results, f, indent=2)
     print(f"   [OK] Results saved to {output_file}")
@@ -444,7 +468,14 @@ def main():
     print(f"  FP32: {fp32_time['mean_ms']:.4f} ms")
     print(f"  INT8: {int8_time['mean_ms']:.4f} ms")
     print(f"  Speedup: {speedup:.2f}x")
-    
+
+    if not skip_env:
+        print(f"\nEnvironment Performance:")
+        if fp32_perf['mean_sgi_intensity']:
+            print(f"  FP32 SGi Intensity: {fp32_perf['mean_sgi_intensity']:.2f}")
+        if int8_perf['mean_sgi_intensity']:
+            print(f"  INT8 SGi Intensity: {int8_perf['mean_sgi_intensity']:.2f}")
+
     print("\n" + "=" * 70)
     print("EVALUATION COMPLETE [OK]")
     print("=" * 70)
@@ -453,5 +484,18 @@ def main():
 
 
 if __name__ == '__main__':
-    exit(main())
+    parser = argparse.ArgumentParser(description="Comprehensive TD3 actor quantization evaluation")
+    parser.add_argument('--variant', choices=['dynamic_int8', 'static_int8'], default='static_int8')
+    parser.add_argument('--episodes', type=int, default=5, help='Number of episodes for environment rollouts')
+    parser.add_argument('--output-dir', type=str, default='quantization_eval_latest', help='Directory to store results and plots')
+    parser.add_argument('--skip-env', action='store_true', help='Skip MATLAB-dependent environment rollouts')
+    args = parser.parse_args()
+    exit(
+        main(
+            variant=args.variant,
+            num_episodes=args.episodes,
+            output_dir=args.output_dir,
+            skip_env=args.skip_env,
+        )
+    )
 

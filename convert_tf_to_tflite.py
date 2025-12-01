@@ -43,10 +43,18 @@ def convert_tf_to_tflite(saved_model_dir='tf_model', output_path='tflite_actors/
         # Load the SavedModel
         print("   Loading SavedModel...")
         converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
-        
+
+        # Force legacy converter to stay compatible with older Arduino builds
+        print("   Forcing legacy converter for Arduino TFLite Micro...")
+        if hasattr(converter, "experimental_new_converter"):
+            converter.experimental_new_converter = False
+        if hasattr(converter, "experimental_new_quantizer"):
+            converter.experimental_new_quantizer = False
+
         # Set optimizations (quantization will happen here)
         print("   Setting optimizations...")
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS]
         
         # Convert
         print("   Converting...")
