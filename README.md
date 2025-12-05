@@ -123,9 +123,18 @@ This will train a TD3 agent with configurable hidden layer sizes (default: 32x32
 python quantize_model.py
 ```
 
+- Exports three actor checkpoints under `models/policies/`:
+  - `actor_fp32_*` (baseline)
+  - `actor_int8_dynamic_*` (weight-only dynamic quantization)
+  - `actor_int8_static_*` (post-training static quantization with calibration states)
+- Writes per-variant latency/size metrics to `quantization_summary_*.json`.
+
 ### 4. Evaluate Quantization
 ```bash
-python comprehensive_quantization_eval.py
+python comprehensive_quantization_eval.py \
+  --variant static_int8 \
+  --output-dir results/quant_eval_run2/static \
+  --skip-env
 ```
 
 ### 5. Profile Power Consumption
