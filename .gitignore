@@ -19,3 +19,5 @@ models/policies/*.pth
 .DS_Store
 .idea/
 .vscode/
+
+.venv_tf28legacy/
