@@ -134,13 +134,19 @@ def collect_calibration_states(num_states=1000):
     return np.array(states)
 
 
-def measure_inference_time(policy, states_path='states_eval.npy', num_runs=100):
+def measure_inference_time(
+    policy,
+    states_path='states_eval.npy',
+    num_runs=100,
+    use_quantized_core=False,
+):
     """
     Measure inference time.
     
     Returns:
         Dictionary with timing statistics
     """
+    mode = 'full'
     if not os.path.exists(states_path):
         states = collect_calibration_states()
         np.save(states_path, states)
@@ -148,19 +154,45 @@ def measure_inference_time(policy, states_path='states_eval.npy', num_runs=100):
         states = np.load(states_path)
     
     states_tensor = torch.from_numpy(states[:100]).float()  # Use subset for timing
-    
+
+    run_module = policy
+    sample = states_tensor
+
+    if use_quantized_core and hasattr(policy, "backbone"):
+        backbone = getattr(policy, "backbone", None)
+        first_layer = None
+        if hasattr(backbone, "__getitem__"):
+            try:
+                first_layer = backbone[0]
+            except (IndexError, TypeError):
+                first_layer = None
+        if (
+            backbone is not None
+            and first_layer is not None
+            and hasattr(first_layer, "scale")
+            and hasattr(first_layer, "zero_point")
+        ):
+            sample = torch.quantize_per_tensor(
+                states_tensor,
+                scale=float(first_layer.scale),
+                zero_point=int(first_layer.zero_point),
+                dtype=torch.quint8,
+            )
+            run_module = backbone
+            mode = 'backbone'
+
     # Warm up
-    with torch.no_grad():
+    with torch.inference_mode():
         for _ in range(10):
-            _ = policy(states_tensor)
+            run_module(sample)
     
     # Measure inference time
     times = []
     for _ in range(num_runs):
-        start_time = time.time()
-        with torch.no_grad():
-            _ = policy(states_tensor)
-        end_time = time.time()
+        start_time = time.perf_counter()
+        with torch.inference_mode():
+            run_module(sample)
+        end_time = time.perf_counter()
         times.append(end_time - start_time)
     
     arr = np.array(times)
@@ -170,7 +202,8 @@ def measure_inference_time(policy, states_path='states_eval.npy', num_runs=100):
         'min_ms': float(arr.min() * 1000),
         'max_ms': float(arr.max() * 1000),
         'p50_ms': float(np.percentile(arr, 50) * 1000),
-        'p90_ms': float(np.percentile(arr, 90) * 1000)
+        'p90_ms': float(np.percentile(arr, 90) * 1000),
+        'mode': mode,
     }
 
 
@@ -283,17 +316,23 @@ def create_comparison_plots(results, output_dir='quantization_eval_plots'):
     
     plt.tight_layout()
     plt.savefig(f'{output_dir}/model_size_comparison.png', dpi=150)
-    plt.show()  # Display the plot
-    plt.close()
+    # Avoid blocking CLI runs by not calling plt.show().
+    plt.close(fig)
     
     # 2. Inference time comparison
     fig, ax = plt.subplots(figsize=(8, 6))
-    fp32_time = results['inference_time']['fp32']['mean_ms']
-    int8_time = results['inference_time']['int8']['mean_ms']
+    fp32_time_data = results['inference_time']['fp32']
+    int8_time_data = results['inference_time']['int8']
+    fp32_time = fp32_time_data['mean_ms']
+    int8_time = int8_time_data['mean_ms']
+    int8_label = 'INT8 (core)' if int8_time_data.get('mode') == 'backbone' else 'INT8'
     times = [fp32_time, int8_time]
-    bars = ax.bar(labels, times, color=colors)
+    bars = ax.bar([labels[0], int8_label], times, color=colors)
     ax.set_ylabel('Mean Inference Time (ms)', fontsize=12)
-    ax.set_title('Inference Time Comparison', fontsize=14, fontweight='bold')
+    title = 'Inference Time Comparison'
+    if int8_time_data.get('mode') == 'backbone':
+        title += ' (pre-quantized inputs)'
+    ax.set_title(title, fontsize=14, fontweight='bold')
     ax.grid(axis='y', alpha=0.3)
     
     for bar, time_val in zip(bars, times):
@@ -304,8 +343,8 @@ def create_comparison_plots(results, output_dir='quantization_eval_plots'):
     
     plt.tight_layout()
     plt.savefig(f'{output_dir}/inference_time_comparison.png', dpi=150)
-    plt.show()  # Display the plot
-    plt.close()
+    # Avoid blocking CLI runs by not calling plt.show().
+    plt.close(fig)
     
     # 3. Action difference histogram
     if 'fidelity' in results and results['fidelity']['fp32_actions']:
@@ -325,8 +364,8 @@ def create_comparison_plots(results, output_dir='quantization_eval_plots'):
         
         plt.tight_layout()
         plt.savefig(f'{output_dir}/action_difference_histogram.png', dpi=150)
-        plt.show()  # Display the plot
-        plt.close()
+        # Avoid blocking CLI runs by not calling plt.show().
+        plt.close(fig)
     
     print(f"[OK] Plots saved to {output_dir}/")
 
@@ -373,11 +412,13 @@ def main(variant="static_int8", num_episodes=5, output_dir="quantization_eval_la
     # Measure inference time
     print("\n4. Measuring inference time...")
     fp32_time = measure_inference_time(fp32_policy)
-    print(f"   FP32 mean: {fp32_time['mean_ms']:.4f} ms ± {fp32_time['std_ms']:.4f} ms")
-    int8_time = measure_inference_time(int8_policy)
-    print(f"   INT8 mean: {int8_time['mean_ms']:.4f} ms ± {int8_time['std_ms']:.4f} ms")
+    print(f"   FP32 mean: {fp32_time['mean_ms']:.4f} ms +/- {fp32_time['std_ms']:.4f} ms")
+    int8_time = measure_inference_time(int8_policy, use_quantized_core=True)
+    int8_mode = int8_time.get('mode', 'full')
+    mode_desc = "core-only (pre-quantized inputs)" if int8_mode == 'backbone' else "with quant/dequant stubs"
+    print(f"   INT8 mean: {int8_time['mean_ms']:.4f} ms +/- {int8_time['std_ms']:.4f} ms ({mode_desc})")
     speedup = fp32_time['mean_ms'] / int8_time['mean_ms'] if int8_time['mean_ms'] > 0 else 0
-    print(f"   Speedup: {speedup:.2f}x")
+    print(f"   Speedup ({mode_desc}): {speedup:.2f}x")
     
     # Evaluate performance
     if skip_env:
@@ -435,7 +476,6 @@ def main(variant="static_int8", num_episodes=5, output_dir="quantization_eval_la
             'int8': int8_perf
         } if not skip_env else None
     }
-    
     # Add action arrays if available (for plotting)
     if 'fp32_actions' in fidelity_results:
         results['fidelity']['fp32_actions'] = fidelity_results['fp32_actions']
@@ -466,8 +506,9 @@ def main(variant="static_int8", num_episodes=5, output_dir="quantization_eval_la
     
     print(f"\nInference Time:")
     print(f"  FP32: {fp32_time['mean_ms']:.4f} ms")
-    print(f"  INT8: {int8_time['mean_ms']:.4f} ms")
-    print(f"  Speedup: {speedup:.2f}x")
+    mode_label = "core-only (pre-quantized inputs)" if int8_mode == 'backbone' else "with quant/dequant stubs"
+    print(f"  INT8: {int8_time['mean_ms']:.4f} ms ({mode_label})")
+    print(f"  Speedup ({mode_label}): {speedup:.2f}x")
 
     if not skip_env:
         print(f"\nEnvironment Performance:")

@@ -15,7 +15,7 @@ import time
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Optional, Tuple
 
 import numpy as np
 import torch
@@ -34,6 +34,7 @@ class ActorArtifacts:
     latency_ms: Dict[str, float]
     checkpoint: Path
     storage_format: str
+    latency_ms_core: Optional[Dict[str, float]] = None
 
 
 class TD3Actor(nn.Module):
@@ -153,6 +154,48 @@ def _benchmark_module(module: nn.Module, sample: torch.Tensor, runs: int = 200) 
     }
 
 
+def _benchmark_quantized_core(
+    quant_actor: "QuantizableTD3Actor", sample: torch.Tensor, runs: int = 200
+) -> Dict[str, float]:
+    """
+    Measure latency of the quantized backbone only, bypassing Quant/DeQuant stubs.
+    Provides a closer estimate of deployment runtime once inputs arrive pre-quantized.
+    """
+
+    core = quant_actor.backbone
+    first_layer = core[0]
+    if not hasattr(first_layer, "scale") or not hasattr(first_layer, "zero_point"):
+        raise ValueError("First quantized layer lacks scale/zero_point attributes.")
+
+    if sample.dim() == 1:
+        sample = sample.unsqueeze(0)
+
+    qsample = torch.quantize_per_tensor(
+        sample,
+        scale=float(first_layer.scale),
+        zero_point=int(first_layer.zero_point),
+        dtype=torch.quint8,
+    )
+
+    timings = []
+    core.eval()
+    with torch.inference_mode():
+        for _ in range(10):
+            core(qsample)
+        for _ in range(runs):
+            start = time.perf_counter()
+            core(qsample)
+            timings.append((time.perf_counter() - start) * 1000.0)
+
+    data = np.array(timings, dtype=np.float64)
+    return {
+        "mean": float(data.mean()),
+        "std": float(data.std(ddof=0)),
+        "p50": float(np.percentile(data, 50)),
+        "p90": float(np.percentile(data, 90)),
+    }
+
+
 def _module_state_size_mb(module: nn.Module) -> float:
     buffer = io.BytesIO()
     torch.save(module.state_dict(), buffer)
@@ -235,6 +278,7 @@ def quantize_td3_actor(
         latency_ms=_benchmark_module(static_actor, single_sample),
         checkpoint=static_path,
         storage_format=static_format,
+        latency_ms_core=_benchmark_quantized_core(static_actor, single_sample),
     )
 
     summary_path = POLICY_ROOT / f"quantization_summary_{hidden_dims[0]}_{hidden_dims[1]}.json"
@@ -246,6 +290,7 @@ def quantize_td3_actor(
             "latency_ms": art.latency_ms,
             "checkpoint": str(art.checkpoint),
             "storage_format": art.storage_format,
+            **({"latency_ms_core": art.latency_ms_core} if art.latency_ms_core else {}),
         }
         for name, art in artifacts.items()
     }
@@ -274,5 +319,12 @@ if __name__ == "__main__":
             f"p50={artifact.latency_ms['p50']:.4f}, "
             f"p90={artifact.latency_ms['p90']:.4f}"
         )
+        if artifact.latency_ms_core:
+            core = artifact.latency_ms_core
+            print(
+                f"    latency_core (ms): mean={core['mean']:.4f}, "
+                f"p50={core['p50']:.4f}, "
+                f"p90={core['p90']:.4f}"
+            )
     print("=" * 70)
 
