@@ -21,3 +21,17 @@ models/policies/*.pth
 .vscode/
 
 .venv_tf28legacy/
+
+# Virtual environments
+venv/
+venv_*/
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
