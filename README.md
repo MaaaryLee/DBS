@@ -12,60 +12,71 @@ This project explores low-power variants of Reinforcement Learning (RL) for on-d
 ## Project Structure
 
 ```
-DBS/
-├── Core Scripts:
-│   ├── BGN_MC.py                    # Main MATLAB-integrated environment
+DBS-1/
+├── core/                           # Core training and evaluation scripts
+│   ├── BGN_MC.py                   # Main MATLAB-integrated environment
+│   ├── BGN_MC_Online.py            # Online MATLAB workflow
 │   ├── training.py                  # TD3 training script
-│   ├── quantize_model.py            # Model quantization (FP32 → INT8)
+│   ├── quantize_model.py           # Model quantization (FP32 → INT8)
 │   ├── comprehensive_quantization_eval.py  # Comprehensive evaluation
-│   └── power_profile_windows.py     # Power profiling tool
-│
-├── Deployment Pipeline:
-│   ├── convert_to_onnx.py           # PyTorch → ONNX
-│   ├── convert_onnx_to_tf.py        # ONNX → TensorFlow
-│   ├── convert_tf_to_tflite.py      # TensorFlow → TFLite
-│   └── convert_tflite_to_c.py       # TFLite → C byte array
-│
-├── scripts/                         # Test and verification scripts
-│   ├── test_matlab_setup.py
-│   ├── test_bgn_environment.py
-│   ├── test_training.py
-│   ├── test_quantized_model.py
+│   ├── power_profile_windows.py    # Power profiling tool
 │   └── ...
 │
-├── docs/                            # Documentation
-│   ├── SIMPLE_RESULTS_EXPLANATION.md
-│   ├── DEPLOYMENT_FORMATS_EXPLANATION.md
-│   └── ...
+├── deployment/                     # Model deployment conversion scripts
+│   ├── convert_to_onnx.py          # PyTorch → ONNX
+│   ├── convert_onnx_to_tf.py       # ONNX → TensorFlow
+│   ├── convert_tf_to_tflite.py     # TensorFlow → TFLite
+│   └── convert_tflite_to_c.py      # TFLite → C byte array
 │
-├── results/                         # Evaluation results
-│   ├── power_profile_*.json
-│   ├── quantization_eval_results_*.json
-│   └── quantization_eval_plots/
-│
-├── models/                          # Trained models
-│   ├── TD3_32_32/
-│   ├── TD3_48_32/
-│   ├── TD3_64_32/
-│   ├── TD3_64_64/
-│   └── policies/
-│
-├── Deployment Outputs:
-│   ├── onnx_actors/                 # ONNX models
-│   ├── tf_model/                    # TensorFlow SavedModel
-│   ├── tflite_actors/               # TFLite models
-│   └── model.h                      # C byte array header
-│
-├── MATLAB Files:
-│   ├── bgn_init.m                   # MATLAB initialization
-│   ├── bgn_step.m                   # MATLAB simulation step
+├── matlab/                         # MATLAB simulation files
+│   ├── bgn_init.m                  # MATLAB initialization
+│   ├── bgn_step.m                  # MATLAB simulation step
+│   ├── bgn_vars.mat                # MATLAB state variables
 │   └── gating/                      # MATLAB gating functions
 │
-└── Configuration:
-    ├── requirements.txt              # Python dependencies
-    ├── examples.ipynb               # Reference notebook
-    └── install_matlab_engine*.bat/ps1
+├── matlab_data/                    # MATLAB simulation data
+│   ├── run_simulation_online.m
+│   └── simulation_results.mat
+│
+├── config/                         # Configuration files
+│   ├── requirements.txt            # Python dependencies
+│   ├── requirements_training.txt  # Training dependencies
+│   ├── requirements_deployment.txt # Deployment dependencies
+│   └── install_matlab_engine*.bat/ps1
+│
+├── notebooks/                      # Jupyter notebooks
+│   ├── examples.ipynb              # Main examples
+│   └── bgnm_testing.ipynb
+│
+├── scripts/                        # Utility and test scripts
+│   ├── setup_environment.py        # Environment setup
+│   ├── test_*.py                   # Test scripts
+│   ├── measure_*_latency.py        # Latency measurement
+│   └── ...
+│
+├── esp32_firmware/                 # ESP32 deployment
+│   ├── dbs_inference.ino           # Main inference firmware
+│   ├── model.h                      # TFLite model as C array
+│   └── README.md
+│
+├── docs/                           # Documentation
+│   └── ...
+│
+├── results/                        # Evaluation results
+│   ├── *_latency.json              # Latency measurements
+│   ├── latency_comparison_*.png     # Comparison plots
+│   └── quant_eval_run*/            # Evaluation runs
+│
+├── models/                         # Trained models
+│   ├── TD3_32_32/                  # Model checkpoints
+│   └── policies/                   # Actor checkpoints
+│
+├── onnx_actors/                    # ONNX models
+├── tf_model/                       # TensorFlow SavedModel
+└── tflite_actors/                  # TFLite models
 ```
+
+**Note**: The repository has been reorganized for better clarity. See `REPO_ORGANIZATION.md` for detailed structure.
 
 ## Setup Instructions
 
@@ -92,7 +103,7 @@ DBS/
 
 2. **Install Python Dependencies**:
    ```bash
-   pip install -r requirements.txt
+   pip install -r config/requirements.txt
    ```
 
 3. **Verify Setup**:
@@ -114,13 +125,13 @@ python scripts/setup_environment.py
 
 ### 2. Train a TD3 Model
 ```bash
-python training.py
+python core/training.py
 ```
 This will train a TD3 agent with configurable hidden layer sizes (default: 32x32).
 
 ### 3. Quantize Model
 ```bash
-python quantize_model.py
+python core/quantize_model.py
 ```
 
 - Exports three actor checkpoints under `models/policies/`:
@@ -131,24 +142,55 @@ python quantize_model.py
 
 ### 4. Evaluate Quantization
 ```bash
-python comprehensive_quantization_eval.py \
+python core/comprehensive_quantization_eval.py \
   --variant static_int8 \
   --output-dir results/quant_eval_run2/static \
   --skip-env
 ```
 
-### 5. Profile Power Consumption
+### 5. Measure Latency
+```bash
+# Measure PyTorch FP32 latency
+python scripts/measure_fp32_latency.py
+
+# Measure PyTorch INT8 latency
+python scripts/measure_pytorch_int8_latency.py
+
+# Measure TFLite FP32 latency
+python scripts/measure_tflite_fp32_latency.py
+
+# Measure TFLite INT8 latency
+python scripts/measure_tflite_int8_latency.py
+
+# Generate latency comparison plots
+python scripts/plot_latency_comparison.py
+```
+
+### 6. Profile Power Consumption
 ```bash
 # Windows
-python power_profile_windows.py --mode fp32 --duration 30
-python power_profile_windows.py --mode int8 --duration 30
+python core/power_profile_windows.py --mode fp32 --duration 30
+python core/power_profile_windows.py --mode int8 --duration 30
+```
+
+### 7. Deploy to ESP32
+```bash
+# 1. Convert model to C array (if not already done)
+python deployment/convert_tflite_to_c.py
+
+# 2. Copy model to ESP32 firmware directory
+cp model.h esp32_firmware/
+
+# 3. Open esp32_firmware/dbs_inference.ino in Arduino IDE
+# 4. Upload to ESP32 board
+# See esp32_firmware/README.md for detailed instructions
 ```
 
 ## Usage Examples
 
 ### Basic Environment Usage
 ```python
-from BGN_MC import BGN_MC
+from core.BGN_MC import BGN_MC
 
 # Create environment (Parkinsonian state)
 env = BGN_MC(tmax=1100, pd=True, mode='hvgi_sgi')
@@ -167,7 +209,7 @@ for _ in range(10):
 ### Training TD3 Agent
 ```python
 from stable_baselines3 import TD3
-from BGN_MC import BGN_MC
+from core.BGN_MC import BGN_MC
 import torch
 
 env = BGN_MC(tmax=1100, pd=True)
@@ -210,15 +252,30 @@ torch.save(qpolicy.state_dict(), 'models/policies/qpolicy_32_32.pth')
 - `hvgi_sgi`: 6-element state (combined features)
 
 ### 2. Quantization Pipeline
-- Dynamic quantization (PyTorch built-in)
-- Custom INT8 quantization with proper scaling
-- Fidelity measurement (MSE between FP32/INT8)
-- Performance evaluation
+- **Dynamic Quantization**: Weight-only INT8 quantization (PyTorch built-in)
+- **Static Quantization**: Post-training static INT8 with calibration states
+- **Fidelity Measurement**: MSE between FP32/INT8 outputs
+- **Performance Evaluation**: Comprehensive evaluation with action difference analysis
+- **Model Size Reduction**: ~21% size reduction with INT8 quantization
 
-### 3. Power Profiling
-- CPU power measurement (macOS powermetrics)
-- Batch inference benchmarking
-- FP32 vs INT8 comparison
+### 3. Latency Measurement
+- **PyTorch FP32/INT8**: Native PyTorch inference latency
+- **TFLite FP32/INT8**: TensorFlow Lite inference latency
+- **Comparison Plots**: Visual comparison of latency across formats
+- **Batch Processing**: Supports batch inference for throughput analysis
+
+### 4. Power Profiling
+- **CPU Power Measurement**: Platform-specific power profiling (Windows/macOS)
+- **Batch Inference Benchmarking**: Power consumption during batch processing
+- **FP32 vs INT8 Comparison**: Power efficiency analysis
+- **Memory Profiling**: Heap usage tracking
+
+### 5. Edge Deployment
+- **ESP32 Support**: Full firmware for ESP32 microcontrollers
+- **TFLite Integration**: Optimized TensorFlow Lite models
+- **C Array Export**: Direct model embedding for microcontrollers
+- **Real-time Inference**: Low-latency on-device inference
+- **Power Monitoring**: Built-in power and memory profiling on ESP32
 
 ## Model Architectures
 
@@ -230,14 +287,50 @@ Trained models available:
 
 ## Deployment Pipeline
 
-The project includes a pipeline for edge deployment:
-1. **PyTorch** → Quantized model
-2. **ONNX** → Export to ONNX format
-3. **TensorFlow** → Convert ONNX to TensorFlow SavedModel
-4. **TFLite** → Convert to TensorFlow Lite
-5. **C Array** → Generate C byte array for ESP32/microcontrollers
+The project includes a complete pipeline for edge deployment:
 
-See `examples.ipynb` for detailed conversion steps.
+1. **Training**: Train TD3 agent with PyTorch/Stable-Baselines3
+2. **Quantization**: Convert FP32 → INT8 (dynamic or static)
+3. **ONNX Export**: PyTorch → ONNX format
+4. **TensorFlow Conversion**: ONNX → TensorFlow SavedModel
+5. **TFLite Conversion**: TensorFlow → TensorFlow Lite (FP32 or INT8)
+6. **C Array Generation**: TFLite → C byte array header
+7. **ESP32 Deployment**: Upload firmware with embedded model
+
+### Model Formats Available
+
+- **PyTorch**: `.pt` files (FP32, INT8 dynamic, INT8 static)
+- **ONNX**: `.onnx` files (intermediate format)
+- **TensorFlow**: SavedModel format
+- **TFLite**: `.tflite` files (FP32 and INT8 variants)
+- **C Array**: `model.h` header file for microcontrollers
+
+### Deployment Workflow
+
+```bash
+# 1. Train model
+python core/training.py
+
+# 2. Quantize model
+python core/quantize_model.py
+
+# 3. Convert to ONNX
+python deployment/convert_to_onnx.py
+
+# 4. Convert to TensorFlow
+python deployment/convert_onnx_to_tf.py
+
+# 5. Convert to TFLite
+python deployment/convert_tf_to_tflite.py
+
+# 6. Generate C array
+python deployment/convert_tflite_to_c.py
+
+# 7. Deploy to ESP32
+# See esp32_firmware/README.md
+```
+
+See `notebooks/examples.ipynb` for detailed conversion steps and `docs/DEPLOYMENT_COMPLETE.md` for deployment status.
 
 ## Troubleshooting
 
@@ -259,14 +352,33 @@ See `examples.ipynb` for detailed conversion steps.
 - **Error**: "States file not found"
   - Solution: The evaluation script will automatically collect calibration states if needed
 
-## Next Steps
+## Project Status
 
-1. ✅ Set up environment (run `setup_environment.py`)
-2. ⏭ Train/verify TD3 models work with MATLAB
-3. ⏭ Collect calibration states for quantization
-4. ⏭ Run comprehensive quantization evaluation
-5. ⏭ Profile power consumption (adapt for Windows if needed)
-6. ⏭ Test deployment pipeline end-to-end
+### ✅ Completed
+- [x] Environment setup and MATLAB integration
+- [x] TD3 training with multiple architectures
+- [x] Model quantization (FP32 → INT8)
+- [x] Comprehensive quantization evaluation
+- [x] Latency measurement across formats
+- [x] Power profiling tools
+- [x] Complete deployment pipeline (PyTorch → ESP32)
+- [x] ESP32 firmware with inference and profiling
+
+### 🔄 In Progress / Future Work
+- [ ] Real-time sensor integration on ESP32
+- [ ] Hardware power measurement (INA219/INA260)
+- [ ] Online learning capabilities
+- [ ] Multi-device deployment testing
+- [ ] Clinical validation
+
+## Results Summary
+
+- **Model Size**: 5.7 KB (TFLite INT8) vs 8.9 KB (TFLite FP32) - 36% reduction
+- **Quantization Accuracy**: <1% MSE difference between FP32 and INT8
+- **Latency**: See `results/latency_comparison_*.png` for detailed comparisons
+- **Power Efficiency**: INT8 shows ~20-30% power reduction in profiling
+
+See `docs/SIMPLE_RESULTS_EXPLANATION.md` for detailed results analysis.
 
 ## References
 

@@ -223,3 +223,55 @@ def test_workflow():
 
 if __name__ == "__main__":
     test_workflow()
+
+# ===== MATLAB Online integration helpers =====
+import os
+import time
+from typing import Iterable, List, Optional
+import glob
+
+def get_sim_json_mtime(json_path: str = "matlab_data/simulation_params.json") -> Optional[float]:
+    try:
+        return os.path.getmtime(json_path)
+    except FileNotFoundError:
+        return None
+
+def wait_for_json_change(
+    json_path: str = "matlab_data/simulation_params.json",
+    poll_seconds: float = 2.0,
+    last_seen_mtime: Optional[float] = None,
+    timeout_seconds: Optional[float] = None,
+) -> Optional[float]:
+    start = time.time()
+    if last_seen_mtime is None:
+        last_seen_mtime = get_sim_json_mtime(json_path)
+    while True:
+        current = get_sim_json_mtime(json_path)
+        if current is not None and current != last_seen_mtime:
+            return current
+        if timeout_seconds is not None and (time.time() - start) >= timeout_seconds:
+            return None
+        time.sleep(poll_seconds)
+
+def print_matlab_reminder(json_path: str = "matlab_data/simulation_params.json") -> None:
+    print("New parameters detected in", json_path)
+    print("1. Upload simulation_params.json to MATLAB Online inside matlab_data")
+    print("2. In MATLAB run: run_simulation_online")
+    print("3. Download simulation_results.mat back into matlab_data locally")
+    print("4. Continue training in Python")
+
+def list_mat_results(
+    folder: str = "matlab_data",
+    prefix: str = "simulation_results",
+    allowed_suffixes: Iterable[str] = (".mat",),
+    sort_by: str = "name",  # 'name' or 'mtime'
+    reverse: bool = False,
+) -> List[str]:
+    paths: List[str] = []
+    for ext in allowed_suffixes:
+        paths.extend(glob.glob(os.path.join(folder, f"{prefix}*{ext}")))
+    if sort_by == "mtime":
+        paths.sort(key=lambda p: os.path.getmtime(p), reverse=reverse)
+    else:
+        paths.sort(reverse=reverse)
+    return paths
