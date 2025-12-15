@@ -11,16 +11,37 @@ import matlab.engine
 import antropy
 import os
 
-# Get the current workspace directory dynamically
-workspace_dir = os.path.dirname(os.path.abspath(__file__))
+def _repo_root() -> str:
+    # core/ -> repo root
+    return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+
+def _matlab_dir() -> str:
+    return os.path.join(_repo_root(), "matlab")
+
+# Start a single MATLAB engine and make sure the repo's `matlab/` folder is on the MATLAB path.
+_MATLAB_DIR = _matlab_dir()
 eng = matlab.engine.start_matlab()
-eng.cd(workspace_dir)
+if os.path.isdir(_MATLAB_DIR):
+    eng.cd(_MATLAB_DIR, nargout=0)
+    try:
+        eng.addpath(eng.genpath(_MATLAB_DIR), nargout=0)
+    except Exception:
+        eng.addpath(_MATLAB_DIR, nargout=0)
+else:
+    # Fallback: keep previous behavior if `matlab/` is unexpectedly missing.
+    workspace_dir = os.path.dirname(os.path.abspath(__file__))
+    eng.cd(workspace_dir, nargout=0)
 
 class BGN_MC(gym.Env):
     def __init__(self, mode='hvgi', tmax=1000, pd=True):
         self.mode = mode
         if pd: self.pd = 1
         else: self.pd = 0
+
+        # MATLAB writes `bgn_vars.mat` to its current working directory.
+        # We read it from an explicit absolute path so this works regardless of Python CWD.
+        self._matlab_dir = _MATLAB_DIR
+        self._vars_path = os.path.join(self._matlab_dir, "bgn_vars.mat")
         
         if mode == 'hvgi': 
             self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(4,), dtype=np.float64)
@@ -46,7 +67,7 @@ class BGN_MC(gym.Env):
         amp = 5000 * ((action[1] + 1)/2)
         
         terminated, vgi_last = eng.bgn_step(freq, amp, sim_time, nargout=2)
-        sgis = scipy.io.loadmat('bgn_vars.mat')['sgis']
+        sgis = scipy.io.loadmat(self._vars_path)['sgis']
         sgis_min = 1082.0999226306508
         sgis_max = 3506.499645178415 
         r1 = (np.sum(np.average(np.abs(np.fft.fft(sgis)), axis=0)[1:20]) - sgis_min)/(sgis_max-sgis_min)
@@ -58,12 +79,12 @@ class BGN_MC(gym.Env):
         epsilon = 0.68
         reward = epsilon * -r1 + (1-epsilon) * -r2
                 
-        i = scipy.io.loadmat('bgn_vars.mat')['i'].flatten()[0]
+        i = scipy.io.loadmat(self._vars_path)['i'].flatten()[0]
         observation = None
 
         # 4 ELEMENT STATE REPRESENTATION BASED ON THE HJORTH OF VGI SIGNAL
         if self.mode == 'hvgi':
-            vgi = scipy.io.loadmat('bgn_vars.mat')['vgi']
+            vgi = scipy.io.loadmat(self._vars_path)['vgi']
             vgi = vgi[:, i-sim_time:i:40]
 
             # sd_min = 25.849944778332663  
@@ -123,8 +144,8 @@ class BGN_MC(gym.Env):
 
         # BASIC 6 ELEMENT STATE REPRESENTATION
         if self.mode == 'hvgi_sgi':
-            vgi = scipy.io.loadmat('bgn_vars.mat')['vgi']
-            vsn = scipy.io.loadmat('bgn_vars.mat')['vsn']
+            vgi = scipy.io.loadmat(self._vars_path)['vgi']
+            vsn = scipy.io.loadmat(self._vars_path)['vsn']
             sd_min = 0.07085760036983213
             sd_max = 0.2060141359064851
             sd = (np.average(np.std(sgis, axis=1)) - sd_min)/(sd_max-sd_min)

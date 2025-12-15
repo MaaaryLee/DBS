@@ -87,7 +87,22 @@ def convert_tf_to_tflite(saved_model_dir='tf_model', output_path='tflite_actors/
     # Test loading TFLite model (optional)
     print("\n5. Testing TFLite model (optional verification)...")
     try:
-        interpreter = tf.lite.Interpreter(model_path=output_path)
+        # Avoid auto-loading default delegates (e.g., XNNPACK) during verification so logs
+        # remain consistent with our benchmarking scripts.
+        disable_default_delegates = os.environ.get("TFLITE_DISABLE_DEFAULT_DELEGATES", "1") == "1"
+        interpreter_kwargs = {"model_path": output_path}
+        if disable_default_delegates:
+            try:
+                interpreter_kwargs["experimental_op_resolver_type"] = (
+                    tf.lite.experimental.OpResolverType.BUILTIN_WITHOUT_DEFAULT_DELEGATES
+                )
+            except Exception:
+                pass
+        try:
+            interpreter = tf.lite.Interpreter(**interpreter_kwargs)
+        except TypeError:
+            interpreter_kwargs.pop("experimental_op_resolver_type", None)
+            interpreter = tf.lite.Interpreter(**interpreter_kwargs)
         interpreter.allocate_tensors()
         
         # Get input and output details

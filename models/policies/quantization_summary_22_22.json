@@ -1,0 +1,41 @@
+{
+  "fp32": {
+    "size_mb": 0.00513458251953125,
+    "latency_ms": {
+      "mean": 0.028088500002922956,
+      "std": 0.016261790147587152,
+      "p50": 0.025599999844416743,
+      "p90": 0.02942000010079937
+    },
+    "checkpoint": "models\\policies\\actor_fp32_22_22.pt",
+    "storage_format": "pickle"
+  },
+  "dynamic_int8": {
+    "size_mb": 0.0051746368408203125,
+    "latency_ms": {
+      "mean": 0.32100500001888577,
+      "std": 0.06418453454264735,
+      "p50": 0.2985500002523622,
+      "p90": 0.4169100000126491
+    },
+    "checkpoint": "models\\policies\\actor_int8_dynamic_22_22.pt",
+    "storage_format": "pickle"
+  },
+  "static_int8": {
+    "size_mb": 0.0075931549072265625,
+    "latency_ms": {
+      "mean": 0.3965065000033974,
+      "std": 0.09842527575798274,
+      "p50": 0.36055000009582727,
+      "p90": 0.47906999998303945
+    },
+    "checkpoint": "models\\policies\\actor_int8_static_22_22.pt",
+    "storage_format": "pickle",
+    "latency_ms_core": {
+      "mean": 0.30277750000323067,
+      "std": 0.06732615941916269,
+      "p50": 0.27879999993274396,
+      "p90": 0.4005800000868476
+    }
+  }
+}

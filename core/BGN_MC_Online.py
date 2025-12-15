@@ -9,7 +9,12 @@ import scipy.io
 import antropy
 import os
 import json
-from matlab_online_workflow import MATLABOnlineBridge
+try:
+    # When imported as `core.BGN_MC_Online`
+    from core.matlab_online_workflow import MATLABOnlineBridge
+except Exception:
+    # When executed with `python core/BGN_MC_Online.py` (core/ on sys.path)
+    from matlab_online_workflow import MATLABOnlineBridge
 
 class BGN_MC_Online(gym.Env):
     def __init__(self, tmax=1000, pd=True, use_matlab_online=False):
@@ -33,13 +38,17 @@ class BGN_MC_Online(gym.Env):
         
         # Load pre-computed data as fallback
         try:
-            self.bgn_data = scipy.io.loadmat('bgn_vars.mat')
+            repo_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+            vars_path = os.path.join(repo_root, "matlab", "bgn_vars.mat")
+            self.bgn_data = scipy.io.loadmat(vars_path)
             self.sgis = self.bgn_data['sgis']
             self.vgi = self.bgn_data['vgi']
             self.vth = self.bgn_data['vth']
             self.vsn = self.bgn_data['vsn']
             self.vge = self.bgn_data['vge']
-            self.Istim = self.bgn_data['Istim'].flatten()
+            # Some exports may omit Istim; keep it optional.
+            Istim = self.bgn_data.get("Istim", np.array([]))
+            self.Istim = np.asarray(Istim).flatten()
             self.has_precomputed_data = True
         except:
             self.has_precomputed_data = False
@@ -99,13 +108,14 @@ class BGN_MC_Online(gym.Env):
             results = self.bridge.load_simulation_results()
             if results is not None:
                 sgis = results['sgis']
-                vgi = results.get('vgi', self.vgi)  # Fallback to precomputed
-                vsn = results.get('vsn', self.vsn)
+                # Prefer signals from MATLAB Online if present; otherwise fall back to precomputed (if available).
+                vgi = results.get('vgi', getattr(self, "vgi", None))
+                vsn = results.get('vsn', getattr(self, "vsn", None))
             else:
                 # Fallback to precomputed data
-                sgis = self.sgis
-                vgi = self.vgi
-                vsn = self.vsn
+                sgis = getattr(self, "sgis", None)
+                vgi = getattr(self, "vgi", None)
+                vsn = getattr(self, "vsn", None)
         else:
             # No fresh results, use precomputed data
             if self.has_precomputed_data:
@@ -117,6 +127,14 @@ class BGN_MC_Online(gym.Env):
                 sgis = np.random.randn(10, 1000) * 0.1
                 vgi = np.random.randn(10, 1000) * 0.1
                 vsn = np.random.randn(10, 1000) * 0.1
+
+        # If MATLAB Online results are partial and no precomputed fallback exists, avoid crashes.
+        if sgis is None:
+            sgis = np.random.randn(10, 1000) * 0.1
+        if vgi is None:
+            vgi = np.random.randn(10, 1000) * 0.1
+        if vsn is None:
+            vsn = np.random.randn(10, 1000) * 0.1
         
         return self._calculate_reward_and_observation(sgis, vgi, vsn, freq, amp, terminated)
     
@@ -151,7 +169,10 @@ class BGN_MC_Online(gym.Env):
         reward = epsilon * -r3 + (1-epsilon) * -r2
 
         # Calculate observation components
-        i = len(self.Istim) - 1 if hasattr(self, 'Istim') else sgis.shape[1] - 1
+        if hasattr(self, "Istim") and len(self.Istim) > 0:
+            i = len(self.Istim) - 1
+        else:
+            i = sgis.shape[1] - 1
 
         # Standard deviation of SGi
         sd = (np.average(np.std(sgis, axis=1)) - self.sd_min)/(self.sd_max-self.sd_min)

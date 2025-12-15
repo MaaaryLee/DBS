@@ -11,7 +11,7 @@ import scipy.io
 import torch
 
 # Importing quantize_model registers TD3Actor for torch.load()
-import quantize_model  # noqa: F401
+import core.quantize_model as quantize_model  # noqa: F401
 from BGN_MC import BGN_MC
 
 

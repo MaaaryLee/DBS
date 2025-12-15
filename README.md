@@ -118,6 +118,20 @@ DBS-1/
 
 ## Quick Start
 
+How the system is organized
+Environment (brain model wrapper):
+core/BGN_MC.py: “full” MATLAB-engine driven environment (calls bgn_init.m, bgn_step.m).
+core/BGN_MC_Online.py: “cached/offline” env that can run from matlab/bgn_vars.mat (and optionally a file-based MATLAB Online workflow via core/matlab_online_workflow.py).
+Training:
+core/training.py: TD3 training; hidden-layer sizes are CLI args --h1, --h2 (default 22×22).
+Saves checkpoints to models/TD3_<h1>_<h2>/<timesteps>.zip and logs to logs/.
+Quantization + evaluation:
+core/quantize_model.py: extracts the actor from the .zip, exports models/policies/actor_fp32_*, actor_int8_dynamic_*, actor_int8_static_*.
+core/comprehensive_quantization_eval.py: compares FP32 vs INT8 (fidelity/size/latency; optional env rollouts).
+Deployment:
+deployment/convert_to_onnx.py → convert_onnx_to_tf.py → convert_tf_to_tflite.py → convert_tflite_to_c.py
+Output lands in tflite_actors/ + model.h for esp32_firmware/.
+
 ### 1. Verify Environment
 ```bash
 python scripts/setup_environment.py
@@ -127,7 +141,7 @@ python scripts/setup_environment.py
 ```bash
 python core/training.py
 ```
-This will train a TD3 agent with configurable hidden layer sizes (default: 32x32).
+This will train a TD3 agent with configurable hidden layer sizes (default: 22x22).
 
 ### 3. Quantize Model
 ```bash

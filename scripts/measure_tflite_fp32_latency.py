@@ -4,21 +4,38 @@ from pathlib import Path
 
 import numpy as np
 import tensorflow as tf
+import os
 
 model_path = Path('tflite_actors/model_fp32.tflite')
 if not model_path.exists():
     raise SystemExit('missing tflite_actors/model_fp32.tflite')
 
 states_path = Path('states_eval.npy')
-if not states_path.exists():
-    raise SystemExit('missing states_eval.npy')
 
 #
 # Fair benchmarking note:
-# - We do NOT manually load delegates here.
-# - TF Lite will pick its default delegate path consistently across scripts.
+# - TF Lite may auto-enable CPU delegates (e.g., XNNPACK) for FP32 models.
+# - To ensure apples-to-apples comparisons vs INT8, we disable *default delegates*
+#   by default. Override with: $env:TFLITE_DISABLE_DEFAULT_DELEGATES="0"
 #
-interpreter = tf.lite.Interpreter(model_path=str(model_path), num_threads=1)
+disable_default_delegates = os.environ.get("TFLITE_DISABLE_DEFAULT_DELEGATES", "1") == "1"
+
+interpreter_kwargs = {"model_path": str(model_path), "num_threads": 1}
+if disable_default_delegates:
+    try:
+        interpreter_kwargs["experimental_op_resolver_type"] = (
+            tf.lite.experimental.OpResolverType.BUILTIN_WITHOUT_DEFAULT_DELEGATES
+        )
+    except Exception:
+        # Older TF builds may not expose this API; fall back to defaults.
+        pass
+
+try:
+    interpreter = tf.lite.Interpreter(**interpreter_kwargs)
+except TypeError:
+    # Older TF builds may not accept experimental_op_resolver_type
+    interpreter_kwargs.pop("experimental_op_resolver_type", None)
+    interpreter = tf.lite.Interpreter(**interpreter_kwargs)
 interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 input_index = input_details[0]['index']
@@ -30,7 +47,21 @@ if list(input_details[0]['shape']) != locked_shape:
     interpreter.allocate_tensors()
     input_details = interpreter.get_input_details()
 
-sample = np.load(states_path).astype('float32')[0:1]
+obs_dim = int(locked_shape[1])
+if not states_path.exists():
+    # Synthetic fallback: simple Gaussian states with correct input dim.
+    rng = np.random.default_rng(seed=0)
+    states = rng.normal(loc=0.0, scale=1.0, size=(1000, obs_dim)).astype("float32")
+    np.save(states_path, states)
+
+states = np.load(states_path).astype('float32')
+if states.ndim != 2 or states.shape[1] != obs_dim:
+    # If an old states_eval.npy has incompatible shape (e.g., 6D), regenerate synthetic.
+    rng = np.random.default_rng(seed=0)
+    states = rng.normal(loc=0.0, scale=1.0, size=(1000, obs_dim)).astype("float32")
+    np.save(states_path, states)
+
+sample = states[0:1]
 sample = sample.reshape(locked_shape)
 
 for _ in range(10):

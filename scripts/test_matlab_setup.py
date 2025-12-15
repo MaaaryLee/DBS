@@ -7,6 +7,10 @@ import os
 import sys
 import matlab.engine
 
+def _repo_root() -> str:
+    # scripts/ -> repo root
+    return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+
 def test_matlab_connection():
     """Test basic MATLAB engine connection."""
     print("=" * 60)
@@ -19,10 +23,21 @@ def test_matlab_connection():
         print("   [OK] MATLAB engine started successfully")
         
         print("\n2. Testing MATLAB workspace directory...")
-        workspace_dir = os.path.dirname(os.path.abspath(__file__))
-        print(f"   Workspace directory: {workspace_dir}")
+        repo_root = _repo_root()
+        matlab_dir = os.path.join(repo_root, "matlab")
+        print(f"   Repo root: {repo_root}")
+        print(f"   MATLAB directory: {matlab_dir}")
+        if not os.path.isdir(matlab_dir):
+            print("   [X] Missing repo 'matlab/' directory")
+            return False
         
-        eng.cd(workspace_dir)
+        # Set MATLAB cwd and path to the repo's matlab/ folder (and subfolders like matlab/gating/)
+        eng.cd(matlab_dir, nargout=0)
+        try:
+            eng.addpath(eng.genpath(matlab_dir), nargout=0)
+        except Exception:
+            # Fallback: at least add the top-level matlab dir
+            eng.addpath(matlab_dir, nargout=0)
         current_dir = eng.pwd()
         print(f"   MATLAB current directory: {current_dir}")
         print("   [OK] Directory change successful")
@@ -41,7 +56,7 @@ def test_matlab_connection():
         
         missing_files = []
         for file in required_files:
-            file_path = os.path.join(workspace_dir, file)
+            file_path = os.path.join(matlab_dir, file)
             if os.path.exists(file_path):
                 print(f"   [OK] Found: {file}")
             else:
@@ -49,7 +64,7 @@ def test_matlab_connection():
                 missing_files.append(file)
         
         print("\n5. Checking gating functions directory...")
-        gating_dir = os.path.join(workspace_dir, 'gating')
+        gating_dir = os.path.join(matlab_dir, 'gating')
         if os.path.exists(gating_dir):
             gating_files = [f for f in os.listdir(gating_dir) if f.endswith('.m')]
             print(f"   [OK] Found gating directory with {len(gating_files)} .m files")

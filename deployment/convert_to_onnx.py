@@ -3,12 +3,11 @@ Convert quantized TD3 model to ONNX format (Cell 12 from examples.ipynb).
 """
 
 import torch
-from torch.ao.quantization import quantize_dynamic
 from stable_baselines3 import TD3
 from BGN_MC import BGN_MC
 import os
 
-def convert_to_onnx(h1=32, h2=32):
+def convert_to_onnx(h1=32, h2=32, dynamic_batch: bool = False):
     """
     Convert quantized TD3 model to ONNX format.
     
@@ -101,16 +100,20 @@ def convert_to_onnx(h1=32, h2=32):
     
     try:
         # Standard ONNX export with wrapped model
+        dynamic_axes = None
+        if dynamic_batch:
+            dynamic_axes = {
+                'observation': {0: 'batch_size'},
+                'action': {0: 'batch_size'}
+            }
+
         torch.onnx.export(
             wrapped_model,
             dummy_input,
             onnx_path,
             input_names=['observation'],
             output_names=['action'],
-            dynamic_axes={
-                'observation': {0: 'batch_size'},
-                'action': {0: 'batch_size'}
-            },
+            dynamic_axes=dynamic_axes,
             opset_version=13,
             do_constant_folding=True,
             export_params=True
@@ -172,8 +175,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Export TD3 policy to ONNX (default: 22x22).")
     parser.add_argument("--h1", type=int, default=22)
     parser.add_argument("--h2", type=int, default=22)
+    parser.add_argument(
+        "--dynamic-batch",
+        action="store_true",
+        help="Export ONNX with dynamic batch dimension (can block XNNPACK static-shape delegation).",
+    )
     args = parser.parse_args()
 
-    success = convert_to_onnx(h1=args.h1, h2=args.h2)
+    success = convert_to_onnx(h1=args.h1, h2=args.h2, dynamic_batch=bool(args.dynamic_batch))
     exit(0 if success else 1)
 

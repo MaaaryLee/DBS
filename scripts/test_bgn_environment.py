@@ -4,7 +4,16 @@ Run this after test_matlab_setup.py passes.
 """
 
 import numpy as np
-from BGN_MC import BGN_MC
+
+# Ensure repo root is on sys.path so we can import `core/...` when running from anywhere.
+import os
+import sys
+
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+from core.BGN_MC import BGN_MC
 
 def test_bgn_environment():
     """Test BGN environment initialization and basic operations."""
