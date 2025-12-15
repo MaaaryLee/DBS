@@ -142,8 +142,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run TD3 actor evaluation with quantized checkpoints")
     parser.add_argument('--variant', choices=list(_VARIANT_SUFFIX.keys()), default='static_int8')
     parser.add_argument('--episodes', type=int, default=5)
+    parser.add_argument('--h1', type=int, default=22)
+    parser.add_argument('--h2', type=int, default=22)
     args = parser.parse_args()
 
-    h1, h2 = 32, 32
-    success = test_quantized_model(h1=h1, h2=h2, num_episodes=args.episodes, method=args.variant)
+    success = test_quantized_model(h1=args.h1, h2=args.h2, num_episodes=args.episodes, method=args.variant)
     exit(0 if success else 1)

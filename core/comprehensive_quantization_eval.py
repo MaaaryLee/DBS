@@ -370,12 +370,18 @@ def create_comparison_plots(results, output_dir='quantization_eval_plots'):
     print(f"[OK] Plots saved to {output_dir}/")
 
 
-def main(variant="static_int8", num_episodes=5, output_dir="quantization_eval_latest", skip_env=False):
+def main(
+    variant="static_int8",
+    num_episodes=5,
+    output_dir="quantization_eval_latest",
+    skip_env=False,
+    h1=22,
+    h2=22,
+):
     print("=" * 70)
     print("Comprehensive Quantization Evaluation")
     print("=" * 70)
     
-    h1, h2 = 32, 32
     output_dir = Path(output_dir)
     plots_dir = output_dir / "plots"
 
@@ -530,6 +536,8 @@ if __name__ == '__main__':
     parser.add_argument('--episodes', type=int, default=5, help='Number of episodes for environment rollouts')
     parser.add_argument('--output-dir', type=str, default='quantization_eval_latest', help='Directory to store results and plots')
     parser.add_argument('--skip-env', action='store_true', help='Skip MATLAB-dependent environment rollouts')
+    parser.add_argument('--h1', type=int, default=22, help='First hidden layer size')
+    parser.add_argument('--h2', type=int, default=22, help='Second hidden layer size')
     args = parser.parse_args()
     exit(
         main(
@@ -537,6 +545,8 @@ if __name__ == '__main__':
             num_episodes=args.episodes,
             output_dir=args.output_dir,
             skip_env=args.skip_env,
+            h1=args.h1,
+            h2=args.h2,
         )
     )
 

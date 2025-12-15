@@ -215,7 +215,7 @@ import torch
 env = BGN_MC(tmax=1100, pd=True)
 policy_kwargs = dict(
     activation_fn=torch.nn.ReLU,
-    net_arch=dict(pi=[32, 32], qf=[32, 32])
+    net_arch=dict(pi=[22, 22], qf=[22, 22])
 )
 
 model = TD3('MlpPolicy', env, verbose=1, 
@@ -223,7 +223,7 @@ model = TD3('MlpPolicy', env, verbose=1,
             learning_rate=0.0001)
 
 model.learn(total_timesteps=2500)
-model.save('models/TD3_32_32/2500')
+model.save('models/TD3_22_22/2500')
 ```
 
 ### Quantization
@@ -233,7 +233,7 @@ from torch.ao.quantization import quantize_dynamic
 from stable_baselines3 import TD3
 
 # Load trained model
-model = TD3.load('models/TD3_32_32/2500.zip')
+model = TD3.load('models/TD3_22_22/2500.zip')
 policy = model.policy.to(torch.device('cpu'))
 policy.eval()
 
@@ -241,7 +241,7 @@ policy.eval()
 qpolicy = quantize_dynamic(policy, dtype=torch.qint8)
 
 # Save quantized model
-torch.save(qpolicy.state_dict(), 'models/policies/qpolicy_32_32.pth')
+torch.save(qpolicy.state_dict(), 'models/policies/qpolicy_22_22.pth')
 ```
 
 ## Key Features
@@ -280,7 +280,8 @@ torch.save(qpolicy.state_dict(), 'models/policies/qpolicy_32_32.pth')
 ## Model Architectures
 
 Trained models available:
-- **TD3_32_32**: 32 nodes per hidden layer (smallest)
+- **TD3_22_22**: 22 nodes per hidden layer (**preferred / smallest**)
+- **TD3_32_32**: 32 nodes per hidden layer
 - **TD3_48_32**: 48/32 nodes (medium)
 - **TD3_64_32**: 64/32 nodes (medium-large)
 - **TD3_64_64**: 64 nodes per layer (largest)
@@ -334,6 +335,7 @@ See `notebooks/examples.ipynb` for detailed conversion steps and `docs/DEPLOYMEN
 
 ## Troubleshooting
 
+### Waiting Updates
 ### MATLAB Engine Issues
 - **Error**: "Cannot find MATLAB"
   - Solution: Add MATLAB to system PATH or specify MATLAB installation path
@@ -354,7 +356,7 @@ See `notebooks/examples.ipynb` for detailed conversion steps and `docs/DEPLOYMEN
 
 ## Project Status
 
-### ✅ Completed
+### Completed
 - [x] Environment setup and MATLAB integration
 - [x] TD3 training with multiple architectures
 - [x] Model quantization (FP32 → INT8)
@@ -364,7 +366,7 @@ See `notebooks/examples.ipynb` for detailed conversion steps and `docs/DEPLOYMEN
 - [x] Complete deployment pipeline (PyTorch → ESP32)
 - [x] ESP32 firmware with inference and profiling
 
-### 🔄 In Progress / Future Work
+### In Progress / Future Work
 - [ ] Real-time sensor integration on ESP32
 - [ ] Hardware power measurement (INA219/INA260)
 - [ ] Online learning capabilities
@@ -379,14 +381,4 @@ See `notebooks/examples.ipynb` for detailed conversion steps and `docs/DEPLOYMEN
 - **Power Efficiency**: INT8 shows ~20-30% power reduction in profiling
 
 See `docs/SIMPLE_RESULTS_EXPLANATION.md` for detailed results analysis.
-
-## References
-
-- BGN Implementation: [IEEE Paper](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=10684783&tag=1)
-- Stable-Baselines3: [Documentation](https://stable-baselines3.readthedocs.io/)
-- PyTorch Quantization: [Documentation](https://pytorch.org/docs/stable/quantization.html)
-
-## License
-
-[Add your license here]
 

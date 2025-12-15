@@ -42,7 +42,7 @@ def test_training_pipeline():
         print(f"   Observation shape: {obs.shape}")
         
         print("\n3. Creating TD3 model...")
-        h1, h2 = 32, 32
+        h1, h2 = 22, 22
         policy_kwargs = dict(
             activation_fn=torch.nn.ReLU,
             net_arch=dict(pi=[h1, h2], qf=[h1, h2])

@@ -13,32 +13,22 @@ states_path = Path('states_eval.npy')
 if not states_path.exists():
     raise SystemExit('missing states_eval.npy')
 
-delegate = None
-delegate_candidates = [
-    'tensorflowlite_xnnpack_delegate.dll',  # Windows
-    'libtensorflowlite_xnnpack_delegate.so',  # Linux
-    'libtensorflowlite_xnnpack_delegate.dylib',  # macOS
-]
-for candidate in delegate_candidates:
-    try:
-        delegate = tf.lite.experimental.load_delegate(candidate)
-        print(f'[info] Loaded delegate: {candidate}')
-        break
-    except (ValueError, OSError):
-        continue
-
-interpreter_kwargs = {'model_path': str(model_path)}
-if delegate is not None:
-    interpreter_kwargs['experimental_delegates'] = [delegate]
-
-interpreter = tf.lite.Interpreter(**interpreter_kwargs)
+#
+# Fair benchmarking note:
+# - We do NOT manually load delegates here.
+# - TF Lite will pick its default delegate path consistently across scripts.
+#
+interpreter = tf.lite.Interpreter(model_path=str(model_path), num_threads=1)
 interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 input_index = input_details[0]['index']
 locked_shape = [1] + list(input_details[0]['shape'][1:])
-interpreter.resize_tensor_input(input_index, locked_shape)
-interpreter.allocate_tensors()
-input_details = interpreter.get_input_details()
+
+# Only resize if needed (avoids warnings with delegates that require static tensors).
+if list(input_details[0]['shape']) != locked_shape:
+    interpreter.resize_tensor_input(input_index, locked_shape)
+    interpreter.allocate_tensors()
+    input_details = interpreter.get_input_details()
 
 sample = np.load(states_path).astype('float32')[0:1]
 sample = sample.reshape(locked_shape)

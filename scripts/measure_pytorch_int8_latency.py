@@ -1,9 +1,11 @@
-import torch
-import time
+import argparse
 import json
-import numpy as np
 import pathlib
 import sys
+import time
+
+import numpy as np
+import torch
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -14,8 +16,15 @@ import quantize_model
 sys.modules['__main__'].TD3Actor = quantize_model.TD3Actor
 sys.modules['__main__'].QuantizableTD3Actor = quantize_model.QuantizableTD3Actor
 
-actor_path = pathlib.Path('models/policies/actor_int8_static_32_32.pt')
-states_path = pathlib.Path('states_eval.npy')
+parser = argparse.ArgumentParser(description="Measure PyTorch INT8 actor latency (default: 22x22).")
+parser.add_argument("--h1", type=int, default=22)
+parser.add_argument("--h2", type=int, default=22)
+parser.add_argument("--states-path", type=str, default="states_eval.npy")
+parser.add_argument("--runs", type=int, default=500)
+args = parser.parse_args()
+
+actor_path = pathlib.Path(f"models/policies/actor_int8_static_{args.h1}_{args.h2}.pt")
+states_path = pathlib.Path(args.states_path)
 
 if not actor_path.exists():
     raise SystemExit('missing actor_int8_static_32_32.pt')
@@ -28,7 +37,7 @@ actor.eval()
 sample = np.load(states_path).astype('float32')[0:1]
 sample = torch.from_numpy(sample)
 
-runs = 500
+runs = args.runs
 
 with torch.inference_mode():
     for _ in range(10):
@@ -40,7 +49,7 @@ with torch.inference_mode():
         times.append((time.perf_counter() - start) * 1000)
 
 summary = {
-    'model': 'actor_int8_static_32_32_pytorch_full',
+    'model': f'actor_int8_static_{args.h1}_{args.h2}_pytorch_full',
     'runs': runs,
     'mean_ms': float(np.mean(times)),
     'p50_ms': float(np.percentile(times, 50)),

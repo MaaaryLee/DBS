@@ -167,8 +167,13 @@ def convert_to_onnx(h1=32, h2=32):
     return True
 
 if __name__ == '__main__':
-    h1, h2 = 32, 32
-    
-    success = convert_to_onnx(h1=h1, h2=h2)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Export TD3 policy to ONNX (default: 22x22).")
+    parser.add_argument("--h1", type=int, default=22)
+    parser.add_argument("--h2", type=int, default=22)
+    args = parser.parse_args()
+
+    success = convert_to_onnx(h1=args.h1, h2=args.h2)
     exit(0 if success else 1)
 

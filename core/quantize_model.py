@@ -8,6 +8,7 @@ Replaces the MATLAB-dependent flow with an offline pipeline that:
 
 from __future__ import annotations
 
+import argparse
 import copy
 import io
 import json
@@ -239,7 +240,7 @@ def _quantize_static(actor: TD3Actor, calibration: torch.Tensor) -> nn.Module:
 
 
 def quantize_td3_actor(
-    hidden_dims: Tuple[int, int] = (32, 32),
+    hidden_dims: Tuple[int, int] = (22, 22),
     model_timesteps: int = 2500,
     states_path: Path = Path("states_eval.npy"),
 ) -> Dict[str, ActorArtifacts]:
@@ -300,8 +301,19 @@ def quantize_td3_actor(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Quantize TD3 actor (default: 22x22).")
+    parser.add_argument("--h1", type=int, default=22, help="First hidden layer size")
+    parser.add_argument("--h2", type=int, default=22, help="Second hidden layer size")
+    parser.add_argument("--timesteps", type=int, default=2500, help="Training checkpoint timesteps (zip name)")
+    parser.add_argument("--states-path", type=str, default="states_eval.npy", help="Calibration states .npy file")
+    args = parser.parse_args()
+
     try:
-        results = quantize_td3_actor()
+        results = quantize_td3_actor(
+            hidden_dims=(args.h1, args.h2),
+            model_timesteps=args.timesteps,
+            states_path=Path(args.states_path),
+        )
     except Exception as exc:
         print("[X] Quantization failed:", exc)
         raise SystemExit(1) from exc
