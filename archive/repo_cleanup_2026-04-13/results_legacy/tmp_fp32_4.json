@@ -1,0 +1,12 @@
+{
+  "model": "tflite_actors/model_fp32.tflite",
+  "runs": 300,
+  "warmup": 20,
+  "threads": 1,
+  "default_delegates_enabled": true,
+  "mean_ms": 0.0015516833333162339,
+  "p50_ms": 0.001250000000396767,
+  "p90_ms": 0.0013875000000496158,
+  "min_ms": 0.0011659999996638248,
+  "max_ms": 0.02349999999928798
+}

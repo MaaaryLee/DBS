@@ -1,0 +1,107 @@
+{
+  "label": "native_fp32_400_300",
+  "mode": "legacy",
+  "runs_requested": 200,
+  "repeats": 3,
+  "port": "/dev/cu.usbmodem101",
+  "aggregate": {
+    "quant_avg_us": {
+      "mean": 1.2966666666666666,
+      "std": 0.020548046676563275,
+      "min": 1.27,
+      "max": 1.32
+    },
+    "invoke_avg_us": {
+      "mean": 19799.883333333335,
+      "std": 0.0047140452071557344,
+      "min": 19799.88,
+      "max": 19799.89
+    },
+    "dequant_avg_us": {
+      "mean": 1.14,
+      "std": 0.0,
+      "min": 1.14,
+      "max": 1.14
+    },
+    "total_avg_us": {
+      "mean": 19802.32,
+      "std": 0.016329931618910967,
+      "min": 19802.3,
+      "max": 19802.34
+    },
+    "min_invoke_us": {
+      "mean": 19793.333333333332,
+      "std": 0.4714045207910317,
+      "min": 19793.0,
+      "max": 19794.0
+    },
+    "max_invoke_us": {
+      "mean": 19801.0,
+      "std": 0.0,
+      "min": 19801.0,
+      "max": 19801.0
+    }
+  },
+  "raw_runs": [
+    {
+      "run_index": 1,
+      "json_path": "results/esp32/repeats/native_fp32_400_300_run01.json",
+      "log_path": "results/esp32/repeats/native_fp32_400_300_run01.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "FP32",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 1.32,
+        "invoke_avg_us": 19799.88,
+        "dequant_avg_us": 1.14,
+        "total_avg_us": 19802.34,
+        "min_invoke_us": 19793,
+        "max_invoke_us": 19801
+      }
+    },
+    {
+      "run_index": 2,
+      "json_path": "results/esp32/repeats/native_fp32_400_300_run02.json",
+      "log_path": "results/esp32/repeats/native_fp32_400_300_run02.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "FP32",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 1.27,
+        "invoke_avg_us": 19799.89,
+        "dequant_avg_us": 1.14,
+        "total_avg_us": 19802.3,
+        "min_invoke_us": 19793,
+        "max_invoke_us": 19801
+      }
+    },
+    {
+      "run_index": 3,
+      "json_path": "results/esp32/repeats/native_fp32_400_300_run03.json",
+      "log_path": "results/esp32/repeats/native_fp32_400_300_run03.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "FP32",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 1.3,
+        "invoke_avg_us": 19799.88,
+        "dequant_avg_us": 1.14,
+        "total_avg_us": 19802.32,
+        "min_invoke_us": 19794,
+        "max_invoke_us": 19801
+      }
+    }
+  ]
+}

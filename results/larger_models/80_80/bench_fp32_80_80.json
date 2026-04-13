@@ -1,0 +1,20 @@
+{
+  "model": "results/larger_models/80_80/model_fp32_80_80.tflite",
+  "dtype": "fp32",
+  "obs_dim": 6,
+  "input_shape": [
+    1,
+    6
+  ],
+  "states_path_used": "states_eval_6d.npy",
+  "runs": 500,
+  "warmup": 10,
+  "threads": 1,
+  "inner_repeats": 50,
+  "default_delegates_enabled": true,
+  "mean_ms": 0.0015347062800002043,
+  "p50_ms": 0.0015195800000000759,
+  "p90_ms": 0.0015569940000030869,
+  "min_ms": 0.0014199999999942037,
+  "max_ms": 0.0028158399999966832
+}

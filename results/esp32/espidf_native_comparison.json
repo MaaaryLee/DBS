@@ -1,0 +1,41 @@
+{
+  "framework": "espidf",
+  "runtime": "esp-tflite-micro",
+  "backend_confirmed": "ESP_NN",
+  "int8": {
+    "framework": "espidf",
+    "runtime": "esp-tflite-micro",
+    "runs": "200",
+    "warmup_runs": "20",
+    "model_io": "INT8",
+    "input_dim": "4",
+    "output_dim": "2",
+    "quant_avg_us": "4.28",
+    "invoke_avg_us": "107.87",
+    "dequant_avg_us": "1.28",
+    "total_avg_us": "113.44",
+    "min_invoke_us": "107",
+    "max_invoke_us": "116"
+  },
+  "fp32": {
+    "framework": "espidf",
+    "runtime": "esp-tflite-micro",
+    "runs": "200",
+    "warmup_runs": "20",
+    "model_io": "FP32",
+    "input_dim": "4",
+    "output_dim": "2",
+    "quant_avg_us": "1.25",
+    "invoke_avg_us": "78.70",
+    "dequant_avg_us": "1.07",
+    "total_avg_us": "81.02",
+    "min_invoke_us": "78",
+    "max_invoke_us": "86"
+  },
+  "speedups": {
+    "int8_vs_fp32_invoke_speed": 0.7296,
+    "fp32_vs_int8_invoke_speed": 1.3706,
+    "int8_vs_fp32_total_speed": 0.7142,
+    "fp32_vs_int8_total_speed": 1.4001
+  }
+}

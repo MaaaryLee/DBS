@@ -10,6 +10,8 @@ __pycache__/
 powermetrics_*.log
 *.log
 *.npy
+logs/
+temp_eval/
 
 # Models (heavy artifacts)
 models/**/*.zip
@@ -19,6 +21,8 @@ models/policies/*.pth
 .DS_Store
 .idea/
 .vscode/
+.external/
+espidf_firmware/dbs_espnn_benchmark/managed_components/
 
 .venv_tf28legacy/
 

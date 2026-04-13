@@ -1,0 +1,100 @@
+{
+  "rows": [
+    {
+      "model": "/Users/maaary/Downloads/DBS-main/results/larger_models/64_64/model_fp32_64_64.tflite",
+      "dtype": "fp32",
+      "obs_dim": 6,
+      "input_shape": [
+        1,
+        6
+      ],
+      "states_path_used": "states_eval_6d.npy",
+      "runs": 200,
+      "warmup": 10,
+      "threads": 1,
+      "inner_repeats": 50,
+      "default_delegates_enabled": true,
+      "mean_ms": 0.0013293497000000265,
+      "p50_ms": 0.0012629099999994509,
+      "p90_ms": 0.0013710720000013055,
+      "min_ms": 0.0012450000000008288,
+      "max_ms": 0.004013340000001975
+    },
+    {
+      "model": "/Users/maaary/Downloads/DBS-main/results/larger_models/64_64/model_int8_64_64.tflite",
+      "dtype": "int8",
+      "obs_dim": 6,
+      "input_shape": [
+        1,
+        6
+      ],
+      "states_path_used": "states_eval_6d.npy",
+      "runs": 200,
+      "warmup": 10,
+      "threads": 1,
+      "inner_repeats": 50,
+      "default_delegates_enabled": true,
+      "mean_ms": 0.001235461999999954,
+      "p50_ms": 0.0011550000000060123,
+      "p90_ms": 0.0012833440000035166,
+      "min_ms": 0.0011358200000000096,
+      "max_ms": 0.004209999999993386
+    },
+    {
+      "model": "/Users/maaary/Downloads/DBS-main/results/larger_models/64_64/model_fp32_64_64.tflite",
+      "dtype": "fp32",
+      "obs_dim": 6,
+      "input_shape": [
+        1,
+        6
+      ],
+      "states_path_used": "states_eval_6d.npy",
+      "runs": 200,
+      "warmup": 10,
+      "threads": 1,
+      "inner_repeats": 50,
+      "default_delegates_enabled": false,
+      "mean_ms": 0.0014252212000001486,
+      "p50_ms": 0.0013374999999982151,
+      "p90_ms": 0.0015215760000009124,
+      "min_ms": 0.0013174999999954196,
+      "max_ms": 0.004641660000004322
+    },
+    {
+      "model": "/Users/maaary/Downloads/DBS-main/results/larger_models/64_64/model_int8_64_64.tflite",
+      "dtype": "int8",
+      "obs_dim": 6,
+      "input_shape": [
+        1,
+        6
+      ],
+      "states_path_used": "states_eval_6d.npy",
+      "runs": 200,
+      "warmup": 10,
+      "threads": 1,
+      "inner_repeats": 50,
+      "default_delegates_enabled": false,
+      "mean_ms": 0.002208433299999912,
+      "p50_ms": 0.0021458400000007316,
+      "p90_ms": 0.0024086660000008915,
+      "min_ms": 0.0020750000000013813,
+      "max_ms": 0.0030175000000021157
+    }
+  ],
+  "speedups": [
+    {
+      "default_delegates_enabled": true,
+      "obs_dim": 6,
+      "fp32_mean_ms": 0.0013293497000000265,
+      "int8_mean_ms": 0.001235461999999954,
+      "int8_speedup_vs_fp32": 1.0759940006249291
+    },
+    {
+      "default_delegates_enabled": false,
+      "obs_dim": 6,
+      "fp32_mean_ms": 0.0014252212000001486,
+      "int8_mean_ms": 0.002208433299999912,
+      "int8_speedup_vs_fp32": 0.6453539710708969
+    }
+  ]
+}

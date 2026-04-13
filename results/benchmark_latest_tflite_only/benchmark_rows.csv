@@ -1,0 +1,3 @@
+backend,dtype,mode,h1,h2,batch_size,threads,runs,warmup,mean_ms,std_ms,p50_ms,p90_ms,min_ms,max_ms,model_path,model_size_kb,notes
+tflite,fp32,tflite,-1,-1,1,1,500,10,0.0011368051600000406,0.0,0.0011316799999994132,0.001144160000001726,0.001110820000000956,0.002066659999999665,tflite_actors/model_fp32.tflite,6.6796875,default delegates enabled
+tflite,int8,tflite,-1,-1,1,1,500,10,0.001109081440000077,0.0,0.0010975000000001955,0.0011191800000003305,0.0010799999999999699,0.0022041599999989003,tflite_actors/model_int8.tflite,3.5,default delegates enabled

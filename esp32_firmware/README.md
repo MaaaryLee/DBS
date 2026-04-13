@@ -1,133 +1,192 @@
 # ESP32 DBS Inference Firmware
 
-This directory contains the ESP32 firmware for running your quantized DBS model and measuring power/memory usage.
+This directory contains the on-device ESP32 benchmark path for the DBS actor.
+
+Current setup:
+
+- `dbs_inference.ino` loads the active `model.h`, detects tensor shapes and dtypes at runtime, and benchmarks `quantize`, `invoke`, `dequant`, and `total`.
+- The Arduino entry sketch is `dbs_benchmark/dbs_benchmark.ino`, which keeps the build isolated from unrelated `.ino` files in this folder.
+- `sketch_dec4b.ino` is the older ArduTFLite Hjorth-feature pipeline benchmark, and its Arduino entry sketch is `dbs_ardutflite_benchmark/dbs_ardutflite_benchmark.ino`.
+- The firmware now uses `Chirale_TensorFLowLite`, which compiles cleanly with the installed `esp32:esp32` core on this machine.
+- The resolver is trimmed to the two ops this actor uses: `FULLY_CONNECTED` and `TANH`.
 
 ## Files
 
-- `dbs_inference.ino` - Main Arduino sketch with inference and profiling
-- `model.h` - Your TFLite model (copy from root directory)
+- `dbs_inference.ino` - Main firmware with serial commands and timing output
+- `dbs_benchmark/dbs_benchmark.ino` - Arduino sketch entry point for compile/upload
+- `sketch_dec4b.ino` - Older ArduTFLite Hjorth benchmark that computes 4 features on-device
+- `dbs_ardutflite_benchmark/dbs_ardutflite_benchmark.ino` - Arduino sketch entry point for the older ArduTFLite benchmark
+- `model.h` - Active generated model header consumed by the firmware
+- `model_manifest.json` - Summary of the currently prepared model variant
 
-## Setup Instructions
+## Which Arduino Sketch To Open
 
-### 1. Install Required Libraries
+If you are using Arduino IDE:
 
-In Arduino IDE:
-1. Go to **Tools → Manage Libraries**
-2. Install:
-   - **TensorFlowLite_ESP32** (by TensorFlow team)
-   - **ESP32** board support (if not already installed)
+- Open `/Users/maaary/Downloads/DBS-main/esp32_firmware/dbs_benchmark/dbs_benchmark.ino` if you want the recommended benchmark path with explicit `quantize` / `invoke` / `dequant` timing and flexible input dimension support.
+- Open `/Users/maaary/Downloads/DBS-main/esp32_firmware/dbs_ardutflite_benchmark/dbs_ardutflite_benchmark.ino` only if you specifically want the older ArduTFLite Hjorth pipeline benchmark that computes the 4D features on-device before inference.
 
-### 2. Board Configuration
+For your current situation, the safer old-sketch replacement is:
 
-1. Go to **Tools → Board → ESP32 Arduino**
-2. Select your ESP32 board (e.g., "ESP32 Dev Module")
-3. Set:
-   - **Upload Speed**: 115200
-   - **CPU Frequency**: 240MHz (for best performance)
-   - **Flash Frequency**: 80MHz
-   - **Partition Scheme**: "Default 4MB with spiffs"
+- `/Users/maaary/Downloads/DBS-main/esp32_firmware/dbs_ardutflite_benchmark/dbs_ardutflite_benchmark.ino`
 
-### 3. Copy Model File
+That path now:
 
-```bash
-# From project root
-cp model.h esp32_firmware/
-```
+- uses the current generated model header through `model_int_8.h`
+- checks whether the flashed model really expects 4 inputs
+- reports a clear error if the model dimension and the sketch do not match
+- prints a machine-readable `BENCH_RESULT` line
 
-### 4. Open in Arduino IDE
+## Recommended Workflow
 
-1. Open `dbs_inference.ino` in Arduino IDE
-2. Verify the code compiles (Ctrl+R / Cmd+R)
-3. Connect your ESP32 via USB
-4. Upload (Ctrl+U / Cmd+U)
+### 1. Install dependencies
 
-## Using Cursor Instead of Arduino IDE
+In Arduino IDE or Arduino CLI, install:
 
-You can write/edit the code in Cursor, then use Arduino CLI to compile and upload:
+- `esp32:esp32`
+- `Chirale_TensorFLowLite`
 
-### Install Arduino CLI
-
-```bash
-# macOS
-brew install arduino-cli
-
-# Or download from: https://arduino.github.io/arduino-cli/
-```
-
-### Setup Arduino CLI
+CLI example:
 
 ```bash
 arduino-cli core update-index
 arduino-cli core install esp32:esp32
-arduino-cli lib install "TensorFlowLite_ESP32"
+arduino-cli lib install "Chirale_TensorFLowLite"
 ```
 
-### Compile and Upload from Cursor
+### 2. Prepare the model variant
+
+From the project root:
 
 ```bash
-# From esp32_firmware directory
-arduino-cli compile --fqbn esp32:esp32:esp32 .
-arduino-cli upload -p /dev/cu.usbserial-* --fqbn esp32:esp32:esp32 .
+python3 scripts/prepare_esp32_benchmark.py --variant int8
 ```
 
-## What the Code Does
+This refreshes:
 
-1. **Loads Model**: Reads TFLite model from `model.h`
-2. **Runs Inference**: Takes 4-element observation, outputs 2-element action
-3. **Measures Memory**: Tracks heap usage before/after inference
-4. **Measures Performance**: Tracks inference time (proxy for power)
-5. **Outputs Results**: Prints DBS frequency/amplitude via Serial
+- `/Users/maaary/Downloads/DBS-main/model.h`
+- `/Users/maaary/Downloads/DBS-main/esp32_firmware/model.h`
+- `/Users/maaary/Downloads/DBS-main/esp32_firmware/model_manifest.json`
 
-## Power Measurement
+When you want the FP32 comparison:
 
-The code measures:
-- **Inference time** (correlates with power consumption)
-- **Memory usage** (heap before/after)
-- **Energy estimation** (based on ESP32 power specs)
+```bash
+python3 scripts/prepare_esp32_benchmark.py --variant fp32
+```
 
-For **actual power measurement**, you'll need:
-- External power monitor (e.g., INA219, INA260)
-- Or use ESP32's built-in ADC to measure current (requires shunt resistor)
+### 3. Compile and upload
 
-## Memory Profiling
+The current helper defaults to the detected `Arduino Nano ESP32` board profile:
 
-The code tracks:
-- Free heap before/after inference
-- Minimum free heap (lowest point)
-- Largest free block
-- Tensor arena usage
+```bash
+python3 scripts/compile_esp32_benchmark.py --upload
+```
 
-## Serial Output
+If auto-detection misses the board, pass the port explicitly:
 
-Connect to Serial Monitor (115200 baud) to see:
-- Model initialization status
-- Memory statistics
-- Inference results (every 10 inferences)
-- Power/performance statistics
+```bash
+python3 scripts/compile_esp32_benchmark.py --upload --port /dev/cu.usbmodemXXXXXXXXXXXX
+```
 
-## Next Steps
+To compile only:
 
-1. **Test inference**: Verify model runs correctly
-2. **Add real sensor data**: Replace simulated observation with actual sensor readings
-3. **Add power monitor**: Integrate INA219 or similar for actual power measurement
-4. **Compare FP32 vs INT8**: Deploy both versions and compare power/memory
+```bash
+python3 scripts/compile_esp32_benchmark.py
+```
+
+For the older ArduTFLite Hjorth benchmark:
+
+```bash
+python3 scripts/compile_esp32_benchmark.py --mode legacy --upload
+```
+
+### 4. Measure on-device latency
+
+After flashing:
+
+```bash
+python3 scripts/run_esp32_benchmark.py --runs 200
+```
+
+For the older ArduTFLite Hjorth benchmark:
+
+```bash
+python3 scripts/run_esp32_benchmark.py --mode legacy --timeout 30
+```
+
+Optional logging:
+
+```bash
+python3 scripts/run_esp32_benchmark.py \
+  --runs 500 \
+  --save-log results/esp32/int8_serial.log \
+  --output-json results/esp32/int8_bench.json
+```
+
+If you want to test a custom observation:
+
+```bash
+python3 scripts/run_esp32_benchmark.py \
+  --observation 0.5 0.3 0.7 0.2 \
+  --runs 200
+```
+
+## Serial Commands
+
+At 115200 baud, the sketch accepts:
+
+- `help`
+- `info`
+- `defaults`
+- `sample <v1> <v2> ... <vN>`
+- `run`
+- `bench <count>`
+
+The Python helper wraps `sample` and `bench` automatically.
+
+## What The Firmware Measures
+
+- `quantize` - Time spent converting float inputs into int8 when the model is quantized
+- `invoke` - The actual TFLite Micro inference call
+- `dequant` - Time spent decoding int8 outputs back to float
+- `total` - End-to-end inference time inside the sketch
+
+This separation matters because `INT8` can have a faster kernel but still lose in total time if input/output conversion dominates.
+
+## Notes For This Repo
+
+- The current prepared INT8 artifact is a 4D actor unless you regenerate a 6D `.tflite` model first.
+- The firmware accepts both 4D and 6D observations, but the embedded model and the input you send must match.
+- Desktop TFLite delegate results and ESP32 TFLite Micro results will not match exactly, because they use different runtimes and different low-level kernels.
 
 ## Troubleshooting
 
-### "Model schema version not supported"
-- Update TensorFlow Lite library to latest version
+### Compile fails in `TensorFlowLite_ESP32`
 
-### "AllocateTensors() failed"
-- Increase `kTensorArenaSize` in the code (currently 10KB)
-- Model might need more memory
+This firmware no longer depends on that older package. Use `Chirale_TensorFLowLite` instead.
 
-### "Out of memory"
-- Reduce `kTensorArenaSize` if too large
-- Check partition scheme (use larger flash if needed)
+### `AllocateTensors() failed`
 
-### Model not found
-- Ensure `model.h` is in the same directory as `.ino` file
-- Check that `model.h` contains valid TFLite model data
+- Increase `kTensorArenaSize` in `/Users/maaary/Downloads/DBS-main/esp32_firmware/dbs_inference.ino`
+- Make sure the generated header matches the model you think you flashed
 
+### Model header missing or stale
 
+Re-run:
 
+```bash
+python3 scripts/prepare_esp32_benchmark.py --variant int8
+```
+
+or:
+
+```bash
+python3 scripts/prepare_esp32_benchmark.py --variant fp32
+```
+
+### INT8 is still slower
+
+- Compare `invoke_avg_us` before comparing `total_avg_us`
+- If `invoke` is faster but `total` is slower, the extra cost is mostly quantize/dequant work
+- If `invoke` is also slower, the bottleneck is the on-device runtime/kernel path, not the Python export path
+- For this small actor, gains may be modest even when INT8 is working correctly

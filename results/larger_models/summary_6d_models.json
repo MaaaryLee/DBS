@@ -1,0 +1,107 @@
+{
+  "comparison_scope": "6D-only models",
+  "excluded_legacy_artifact": "models/policies/policy_32_32.pth (4D)",
+  "esp32_native_threshold_search": {
+    "last_tested_fp32_winner": "80_80",
+    "first_tested_int8_winner": "96_96"
+  },
+  "desktop_tflite": [
+    {
+      "model_size": "48_32",
+      "obs_dim": 6,
+      "fp32_mean_ms": 0.0012947049999999826,
+      "int8_mean_ms": 0.0012272997199996461,
+      "int8_speedup_vs_fp32": 1.0549216127910108
+    },
+    {
+      "model_size": "64_32",
+      "obs_dim": 6,
+      "fp32_mean_ms": 0.0013457966399999144,
+      "int8_mean_ms": 0.0012330933599999838,
+      "int8_speedup_vs_fp32": 1.0913988215782235
+    },
+    {
+      "model_size": "64_64",
+      "obs_dim": 6,
+      "fp32_mean_ms": 0.0013393096399999926,
+      "int8_mean_ms": 0.0012143834000002051,
+      "int8_speedup_vs_fp32": 1.1028721571785043
+    },
+    {
+      "model_size": "80_80",
+      "obs_dim": 6,
+      "fp32_mean_ms": 0.0015347062800002043,
+      "int8_mean_ms": 0.001260614440000083,
+      "int8_speedup_vs_fp32": 1.2174271778134662
+    },
+    {
+      "model_size": "96_96",
+      "obs_dim": 6,
+      "fp32_mean_ms": 0.0016349531600000056,
+      "int8_mean_ms": 0.0013336099599998085,
+      "int8_speedup_vs_fp32": 1.225960519971102
+    },
+    {
+      "model_size": "128_128",
+      "obs_dim": 6,
+      "fp32_mean_ms": 0.002107888400000082,
+      "int8_mean_ms": 0.0014808165999998125,
+      "int8_speedup_vs_fp32": 1.4234635133076905
+    }
+  ],
+  "esp32_native": [
+    {
+      "model_size": "64_32",
+      "obs_dim": 6,
+      "fp32_invoke_us": 124.28,
+      "int8_invoke_us": 165.22,
+      "fp32_total_us": 126.71,
+      "int8_total_us": 172.27,
+      "int8_speedup_vs_fp32_invoke": 0.7522084493402737,
+      "int8_speedup_vs_fp32_total": 0.7354733842236024,
+      "fp32_faster_factor_invoke": 1.329417444480206
+    },
+    {
+      "model_size": "64_64",
+      "obs_dim": 6,
+      "fp32_invoke_us": 196.38,
+      "int8_invoke_us": 246.1,
+      "fp32_total_us": 198.76,
+      "int8_total_us": 253.15,
+      "int8_speedup_vs_fp32_invoke": 0.7979673303535149,
+      "int8_speedup_vs_fp32_total": 0.7853051540588584,
+      "fp32_faster_factor_invoke": 1.2531826051532742
+    },
+    {
+      "model_size": "80_80",
+      "obs_dim": 6,
+      "fp32_invoke_us": 281.908,
+      "int8_invoke_us": 333.68600000000004,
+      "fp32_total_us": 284.31,
+      "int8_total_us": 340.73,
+      "int8_speedup_vs_fp32_invoke": 0.844830169680478,
+      "int8_speedup_vs_fp32_total": 0.8344143456695917,
+      "fp32_faster_factor_invoke": 1.1836686916408474
+    },
+    {
+      "model_size": "96_96",
+      "obs_dim": 6,
+      "fp32_invoke_us": 1685.7759999999998,
+      "int8_invoke_us": 435.796,
+      "fp32_total_us": 1688.16,
+      "int8_total_us": 442.82,
+      "int8_speedup_vs_fp32_invoke": 3.8682686394551578,
+      "int8_speedup_vs_fp32_total": 3.8122939343299764
+    },
+    {
+      "model_size": "128_128",
+      "obs_dim": 6,
+      "fp32_invoke_us": 2885.166,
+      "int8_invoke_us": 680.562,
+      "fp32_total_us": 2887.59,
+      "int8_total_us": 687.47,
+      "int8_speedup_vs_fp32_invoke": 4.239387447433151,
+      "int8_speedup_vs_fp32_total": 4.200314195528533
+    }
+  ]
+}

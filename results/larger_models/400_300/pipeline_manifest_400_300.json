@@ -1,0 +1,72 @@
+{
+  "label": "400_300",
+  "hidden_layers": [
+    400,
+    300
+  ],
+  "checkpoint": "/Users/maaary/Downloads/DBS-main/models/TD3_400_300/500.zip",
+  "states_path": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/states_eval.npy",
+  "built_steps": [
+    "pytorch_quantization",
+    "onnx_export",
+    "saved_model_export",
+    "tflite_fp32_export",
+    "tflite_int8_export",
+    "esp32_headers",
+    "desktop_tflite_bench"
+  ],
+  "artifacts": {
+    "onnx": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/model_400_300.onnx",
+    "tf_dir": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/tf_model_400_300",
+    "fp32_tflite": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/model_fp32_400_300.tflite",
+    "fp32_alias": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/model_alias_fp32_400_300.tflite",
+    "int8_tflite": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/model_int8_400_300.tflite",
+    "fp32_header": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/model_fp32_400_300.h",
+    "int8_header": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/model_int8_400_300.h",
+    "fp32_bench": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/bench_fp32_400_300.json",
+    "int8_bench": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/bench_int8_400_300.json",
+    "manifest": "/Users/maaary/Downloads/DBS-main/results/larger_models/400_300/pipeline_manifest_400_300.json"
+  },
+  "fp32_tflite_info": {
+    "size_bytes": 496536,
+    "input_shape": [
+      1,
+      6
+    ],
+    "output_shape": [
+      1,
+      2
+    ],
+    "input_dtype": "float32",
+    "output_dtype": "float32",
+    "input_quantization": [
+      0.0,
+      0
+    ],
+    "output_quantization": [
+      0.0,
+      0
+    ]
+  },
+  "int8_tflite_info": {
+    "size_bytes": 127928,
+    "input_shape": [
+      1,
+      6
+    ],
+    "output_shape": [
+      1,
+      2
+    ],
+    "input_dtype": "int8",
+    "output_dtype": "int8",
+    "input_quantization": [
+      0.01948394812643528,
+      58
+    ],
+    "output_quantization": [
+      0.0078125,
+      0
+    ]
+  }
+}

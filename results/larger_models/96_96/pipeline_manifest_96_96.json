@@ -1,0 +1,71 @@
+{
+  "label": "96_96",
+  "hidden_layers": [
+    96,
+    96
+  ],
+  "checkpoint": "/Users/maaary/Downloads/DBS-main/models/TD3_96_96/500.zip",
+  "states_path": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/states_eval.npy",
+  "built_steps": [
+    "onnx_export",
+    "saved_model_export",
+    "tflite_fp32_export",
+    "tflite_int8_export",
+    "esp32_headers",
+    "desktop_tflite_bench"
+  ],
+  "artifacts": {
+    "onnx": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/model_96_96.onnx",
+    "tf_dir": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/tf_model_96_96",
+    "fp32_tflite": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/model_fp32_96_96.tflite",
+    "fp32_alias": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/model_alias_fp32_96_96.tflite",
+    "int8_tflite": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/model_int8_96_96.tflite",
+    "fp32_header": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/model_fp32_96_96.h",
+    "int8_header": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/model_int8_96_96.h",
+    "fp32_bench": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/bench_fp32_96_96.json",
+    "int8_bench": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/bench_int8_96_96.json",
+    "manifest": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/pipeline_manifest_96_96.json"
+  },
+  "fp32_tflite_info": {
+    "size_bytes": 42440,
+    "input_shape": [
+      1,
+      6
+    ],
+    "output_shape": [
+      1,
+      2
+    ],
+    "input_dtype": "float32",
+    "output_dtype": "float32",
+    "input_quantization": [
+      0.0,
+      0
+    ],
+    "output_quantization": [
+      0.0,
+      0
+    ]
+  },
+  "int8_tflite_info": {
+    "size_bytes": 12880,
+    "input_shape": [
+      1,
+      6
+    ],
+    "output_shape": [
+      1,
+      2
+    ],
+    "input_dtype": "int8",
+    "output_dtype": "int8",
+    "input_quantization": [
+      0.01948394812643528,
+      58
+    ],
+    "output_quantization": [
+      0.0078125,
+      0
+    ]
+  }
+}

@@ -2,6 +2,7 @@
 Convert ONNX model to TensorFlow SavedModel (Cell 13 from examples.ipynb).
 """
 
+import argparse
 import os
 import subprocess
 import sys
@@ -52,37 +53,49 @@ def convert_onnx_to_tf(onnx_path='onnx_actors/model.onnx', output_dir='tf_model'
     print("   This may take a minute...")
     
     try:
-        # Use onnx-tf command line tool
-        cmd = [
-            sys.executable, '-m', 'onnx_tf.converter',
-            '-i', onnx_path,
-            '-o', output_dir
-        ]
-        
-        print(f"   Running: {' '.join(cmd)}")
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        
+        # Prefer the Python API because the CLI wrapper can report success without
+        # leaving a SavedModel behind in some local environments.
+        import onnx
+        from onnx_tf.backend import prepare
+
+        print("   Using onnx-tf Python API...")
+        onnx_model = onnx.load(onnx_path)
+        tf_rep = prepare(onnx_model)
+        tf_rep.export_graph(output_dir)
         print("   [OK] Conversion completed successfully")
-        if result.stdout:
-            print(f"   Output: {result.stdout[:200]}...")
-        
-    except subprocess.CalledProcessError as e:
-        print(f"   [X] ERROR during conversion: {e}")
-        if e.stdout:
-            print(f"   stdout: {e.stdout}")
-        if e.stderr:
-            print(f"   stderr: {e.stderr}")
-        return False
     except Exception as e:
-        print(f"   [X] ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        print(f"   [WARNING] Python API conversion failed: {e}")
+        print("   Retrying with onnx-tf CLI...")
+        try:
+            cmd = [
+                sys.executable, '-m', 'onnx_tf.converter',
+                '-i', onnx_path,
+                '-o', output_dir
+            ]
+
+            print(f"   Running: {' '.join(cmd)}")
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+
+            print("   [OK] CLI conversion completed successfully")
+            if result.stdout:
+                print(f"   Output: {result.stdout[:200]}...")
+        except subprocess.CalledProcessError as cli_exc:
+            print(f"   [X] ERROR during CLI conversion: {cli_exc}")
+            if cli_exc.stdout:
+                print(f"   stdout: {cli_exc.stdout}")
+            if cli_exc.stderr:
+                print(f"   stderr: {cli_exc.stderr}")
+            return False
+        except Exception as cli_exc:
+            print(f"   [X] ERROR: {cli_exc}")
+            import traceback
+            traceback.print_exc()
+            return False
     
     # Verify conversion
     print("\n5. Verifying TensorFlow SavedModel...")
@@ -125,6 +138,10 @@ def convert_onnx_to_tf(onnx_path='onnx_actors/model.onnx', output_dir='tf_model'
     return True
 
 if __name__ == '__main__':
-    success = convert_onnx_to_tf()
-    exit(0 if success else 1)
+    parser = argparse.ArgumentParser(description="Convert ONNX to TensorFlow SavedModel.")
+    parser.add_argument("--onnx-path", default="onnx_actors/model.onnx")
+    parser.add_argument("--output-dir", default="tf_model")
+    args = parser.parse_args()
 
+    success = convert_onnx_to_tf(onnx_path=args.onnx_path, output_dir=args.output_dir)
+    exit(0 if success else 1)

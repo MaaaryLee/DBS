@@ -1,0 +1,20 @@
+{
+  "model": "results/larger_models/96_96/model_int8_96_96_repaired.tflite",
+  "dtype": "int8",
+  "obs_dim": 6,
+  "input_shape": [
+    1,
+    6
+  ],
+  "states_path_used": "states_eval_6d_repaired.npy",
+  "runs": 500,
+  "warmup": 10,
+  "threads": 1,
+  "inner_repeats": 50,
+  "default_delegates_enabled": true,
+  "mean_ms": 0.0013336099599998085,
+  "p50_ms": 0.0013183200000010942,
+  "p90_ms": 0.0013709219999951117,
+  "min_ms": 0.001299160000005628,
+  "max_ms": 0.0016758399999972085
+}

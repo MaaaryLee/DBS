@@ -1,0 +1,18 @@
+[
+  {
+    "backend": "tflite",
+    "dtype": "fp32",
+    "mode": "tflite",
+    "mean_ms": 0.0011368051600000406,
+    "baseline_fp32_mean_ms": 0.0011368051600000406,
+    "speedup_vs_fp32": 1.0
+  },
+  {
+    "backend": "tflite",
+    "dtype": "int8",
+    "mode": "tflite",
+    "mean_ms": 0.001109081440000077,
+    "baseline_fp32_mean_ms": 0.0011368051600000406,
+    "speedup_vs_fp32": 1.0249970101383734
+  }
+]

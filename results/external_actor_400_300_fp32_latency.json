@@ -1,0 +1,20 @@
+{
+  "model": "/Users/maaary/Desktop/actor_400_300.tflite",
+  "dtype": "fp32",
+  "obs_dim": 4,
+  "input_shape": [
+    1,
+    4
+  ],
+  "states_path_used": "states_eval_4d.npy",
+  "runs": 500,
+  "warmup": 10,
+  "threads": 1,
+  "inner_repeats": 50,
+  "default_delegates_enabled": true,
+  "mean_ms": 0.009805491880000404,
+  "p50_ms": 0.009686249999996122,
+  "p90_ms": 0.0102570000000064,
+  "min_ms": 0.009196659999997081,
+  "max_ms": 0.016325839999993264
+}

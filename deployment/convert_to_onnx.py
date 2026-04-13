@@ -1,13 +1,75 @@
 """
-Convert quantized TD3 model to ONNX format (Cell 12 from examples.ipynb).
+Convert a saved TD3 actor policy to ONNX format without requiring the training
+environment or MATLAB.
 """
 
-import torch
-from stable_baselines3 import TD3
-from BGN_MC import BGN_MC
 import os
+from pathlib import Path
+from typing import Optional
+import zipfile
 
-def convert_to_onnx(h1=32, h2=32, dynamic_batch: bool = False):
+import torch
+
+
+class TD3Actor(torch.nn.Module):
+    """Minimal TD3 actor: Linear -> ReLU -> Linear -> ReLU -> Linear -> tanh."""
+
+    def __init__(
+        self,
+        obs_dim: int,
+        hidden_dims: tuple[int, int],
+        action_dim: int,
+        apply_output_tanh: bool = True,
+    ) -> None:
+        super().__init__()
+        h1, h2 = hidden_dims
+        self.backbone = torch.nn.Sequential(
+            torch.nn.Linear(obs_dim, h1),
+            torch.nn.ReLU(),
+            torch.nn.Linear(h1, h2),
+            torch.nn.ReLU(),
+            torch.nn.Linear(h2, action_dim),
+        )
+        self.apply_output_tanh = apply_output_tanh
+
+    def forward(self, x):
+        x = self.backbone(x)
+        return torch.tanh(x) if self.apply_output_tanh else x
+
+
+def _build_actor_from_policy_state(state_dict, apply_output_tanh: bool = True):
+    obs_dim = state_dict["actor.mu.0.weight"].shape[1]
+    hidden1 = state_dict["actor.mu.0.weight"].shape[0]
+    hidden2 = state_dict["actor.mu.2.weight"].shape[0]
+    action_dim = state_dict["actor.mu.4.weight"].shape[0]
+
+    actor = TD3Actor(
+        obs_dim=obs_dim,
+        hidden_dims=(hidden1, hidden2),
+        action_dim=action_dim,
+        apply_output_tanh=apply_output_tanh,
+    )
+    actor.eval()
+
+    with torch.no_grad():
+        actor.backbone[0].weight.copy_(state_dict["actor.mu.0.weight"])
+        actor.backbone[0].bias.copy_(state_dict["actor.mu.0.bias"])
+        actor.backbone[2].weight.copy_(state_dict["actor.mu.2.weight"])
+        actor.backbone[2].bias.copy_(state_dict["actor.mu.2.bias"])
+        actor.backbone[4].weight.copy_(state_dict["actor.mu.4.weight"])
+        actor.backbone[4].bias.copy_(state_dict["actor.mu.4.bias"])
+
+    return actor, obs_dim, action_dim, (hidden1, hidden2)
+
+
+def convert_to_onnx(
+    h1=32,
+    h2=32,
+    dynamic_batch: bool = False,
+    policy_path: Optional[str] = None,
+    output_path: str = "onnx_actors/model.onnx",
+    apply_output_tanh: bool = True,
+):
     """
     Convert quantized TD3 model to ONNX format.
     
@@ -19,56 +81,52 @@ def convert_to_onnx(h1=32, h2=32, dynamic_batch: bool = False):
     print("Converting Quantized Model to ONNX (Cell 12 from examples.ipynb)")
     print("=" * 70)
     
-    # Create directories
-    onnx_dir = 'onnx_actors'
-    if not os.path.exists(onnx_dir):
-        os.makedirs(onnx_dir)
-        print(f"[OK] Created directory: {onnx_dir}")
-    
-    # Create environment (needed for TD3 structure)
-    print("\n1. Creating BGN environment...")
-    bgn = BGN_MC(tmax=1100, pd=True)
-    print("   [OK] Environment created")
-    
-    # Create TD3 model structure
-    print("\n2. Creating TD3 model structure...")
+    output_target = Path(output_path)
+    output_target.parent.mkdir(parents=True, exist_ok=True)
+
+    # Load actor weights directly from the saved policy file. This avoids the
+    # need to reconstruct the TD3 training environment just for export.
+    print("\n1. Loading saved policy...")
     try:
-        policy_kwargs = dict(
-            activation_fn=torch.nn.ReLU,
-            net_arch=dict(pi=[h1, h2], qf=[h1, h2])
-        )
-        model = TD3('MlpPolicy', bgn, verbose=0, policy_kwargs=policy_kwargs, learning_rate=0.0001)
-        
-        # Load FP32 policy (ONNX doesn't support quantized operators directly)
-        # We'll use FP32 for ONNX, quantization will happen in TFLite
-        policy_path = f'models/policies/policy_{h1}_{h2}.pth'
+        if policy_path is None:
+            policy_path = f"models/policies/policy_{h1}_{h2}.pth"
         print(f"   Loading FP32 policy from: {policy_path}")
         print("   Note: Using FP32 for ONNX export (quantization in TFLite)")
-        
-        policy = model.policy.to(torch.device('cpu'))
-        policy.load_state_dict(torch.load(policy_path, weights_only=False))
-        policy.eval()
-        print("   [OK] FP32 policy loaded")
+        policy_path_obj = Path(policy_path)
+        if policy_path_obj.suffix == ".zip":
+            with zipfile.ZipFile(policy_path_obj, "r") as archive:
+                if "policy.pth" not in archive.namelist():
+                    raise FileNotFoundError(f"`policy.pth` missing inside {policy_path_obj}")
+                with archive.open("policy.pth", "r") as buffer:
+                    state_dict = torch.load(buffer, map_location="cpu", weights_only=False)
+        else:
+            state_dict = torch.load(policy_path_obj, map_location="cpu", weights_only=False)
+        policy, obs_dim, action_dim, inferred_hidden_dims = _build_actor_from_policy_state(
+            state_dict,
+            apply_output_tanh=apply_output_tanh,
+        )
+        print(
+            f"   [OK] FP32 policy loaded: obs_dim={obs_dim}, "
+            f"hidden={inferred_hidden_dims[0]}x{inferred_hidden_dims[1]}, action_dim={action_dim}"
+        )
+        print(f"   Output tanh enabled: {apply_output_tanh}")
     except Exception as e:
         print(f"   [X] ERROR loading model: {e}")
         import traceback
         traceback.print_exc()
         return False
     
-    # Determine input shape based on observation space
-    print("\n3. Determining input shape...")
-    obs, _ = bgn.reset()
-    obs_dim = len(obs)
-    print(f"   Observation dimension: {obs_dim}")
+    # Determine input shape from saved weights.
+    print("\n2. Determining input shape...")
     print(f"   Input shape: (1, {obs_dim})")
     
     # Create dummy input for ONNX export
-    print("\n4. Creating dummy input...")
+    print("\n3. Creating dummy input...")
     dummy_input = torch.rand(1, obs_dim).to(torch.device('cpu'))
     print(f"   [OK] Dummy input created: shape {dummy_input.shape}")
     
     # Create a wrapper that only returns the tensor (not tuple)
-    print("\n5. Creating ONNX-compatible wrapper...")
+    print("\n4. Creating ONNX-compatible wrapper...")
     class ONNXWrapper(torch.nn.Module):
         def __init__(self, model):
             super().__init__()
@@ -87,7 +145,7 @@ def convert_to_onnx(h1=32, h2=32, dynamic_batch: bool = False):
     print("   [OK] Wrapper created")
     
     # Test the wrapper
-    print("\n6. Testing wrapper...")
+    print("\n5. Testing wrapper...")
     with torch.no_grad():
         test_output = wrapped_model(dummy_input)
         print(f"   Output shape: {test_output.shape}")
@@ -95,8 +153,8 @@ def convert_to_onnx(h1=32, h2=32, dynamic_batch: bool = False):
         print("   [OK] Wrapper works correctly")
     
     # Export to ONNX
-    print("\n7. Exporting to ONNX format...")
-    onnx_path = f'{onnx_dir}/model.onnx'
+    print("\n6. Exporting to ONNX format...")
+    onnx_path = str(output_target)
     
     try:
         # Standard ONNX export with wrapped model
@@ -126,7 +184,7 @@ def convert_to_onnx(h1=32, h2=32, dynamic_batch: bool = False):
         return False
     
     # Verify ONNX file was created
-    print("\n8. Verifying ONNX file...")
+    print("\n7. Verifying ONNX file...")
     if os.path.exists(onnx_path):
         file_size = os.path.getsize(onnx_path) / (1024 * 1024)  # MB
         print(f"   [OK] ONNX file exists")
@@ -137,7 +195,7 @@ def convert_to_onnx(h1=32, h2=32, dynamic_batch: bool = False):
         return False
     
     # Test ONNX model loading (optional verification)
-    print("\n9. Testing ONNX model (optional verification)...")
+    print("\n8. Testing ONNX model (optional verification)...")
     try:
         import onnx
         onnx_model = onnx.load(onnx_path)
@@ -180,8 +238,21 @@ if __name__ == '__main__':
         action="store_true",
         help="Export ONNX with dynamic batch dimension (can block XNNPACK static-shape delegation).",
     )
+    parser.add_argument("--policy-path", type=str, default=None)
+    parser.add_argument("--output-path", type=str, default="onnx_actors/model.onnx")
+    parser.add_argument(
+        "--no-output-tanh",
+        action="store_true",
+        help="Export the actor without the final tanh. Useful for profiling whether the output activation matters.",
+    )
     args = parser.parse_args()
 
-    success = convert_to_onnx(h1=args.h1, h2=args.h2, dynamic_batch=bool(args.dynamic_batch))
+    success = convert_to_onnx(
+        h1=args.h1,
+        h2=args.h2,
+        dynamic_batch=bool(args.dynamic_batch),
+        policy_path=args.policy_path,
+        output_path=args.output_path,
+        apply_output_tanh=not bool(args.no_output_tanh),
+    )
     exit(0 if success else 1)
-

@@ -14,6 +14,7 @@ import argparse
 from pathlib import Path
 import sys
 
+import antropy
 import numpy as np
 
 
@@ -40,6 +41,83 @@ def _make_env(source: str, tmax: int, pd: bool, mode: str | None):
     raise ValueError(f"Unknown source: {source}")
 
 
+def _compute_cached_6d_state(env, sgis_window: np.ndarray, vgi_window: np.ndarray, vsn_window: np.ndarray) -> np.ndarray:
+    eps = 1e-12
+
+    sd = (np.average(np.std(sgis_window, axis=1)) - env.sd_min) / (env.sd_max - env.sd_min)
+
+    activity = float(np.average(np.var(sgis_window, axis=1)))
+    activity = max(activity, eps)
+    activity_norm = (activity - env.A_min) / (env.A_max - env.A_min)
+
+    mobility = float(np.average(np.sqrt(np.maximum(np.var(np.diff(sgis_window, axis=1), axis=1), 0.0) / activity)))
+    mobility_norm = (mobility - env.M_min) / (env.M_max - env.M_min)
+
+    complexity = float(
+        np.average(
+            np.sqrt(np.maximum(np.var(np.diff(np.diff(sgis_window, axis=1), axis=1), axis=1), 0.0) / activity)
+            / max(mobility, eps)
+        )
+    )
+    complexity_norm = (complexity - env.C_min) / (env.C_max - env.C_min)
+
+    pb = (
+        np.sum(np.average(np.abs(np.fft.fft(vgi_window)) / 0.1, axis=0)[12:31]) - env.Pb_min
+    ) / (env.Pb_max - env.Pb_min)
+
+    sampen_values = []
+    for row in vsn_window:
+        try:
+            sampen_values.append(float(antropy.sample_entropy(row)))
+        except Exception:
+            continue
+    if sampen_values:
+        sampen = (float(np.mean(sampen_values)) - env.SampEn_min) / (env.SampEn_max - env.SampEn_min)
+    else:
+        sampen = 0.5
+
+    return np.asarray((sd, activity_norm, mobility_norm, complexity_norm, pb, sampen), dtype=np.float32)
+
+
+def _collect_windowed_cached_states(env, *, num_states: int, seed: int) -> np.ndarray:
+    """
+    The cached 6D environment currently reuses one precomputed signal bundle, so a
+    simple env rollout produces the same observation repeatedly. To recover a usable
+    calibration/evaluation set, derive feature vectors from random time windows of
+    the cached MATLAB signals instead.
+    """
+
+    if not getattr(env, "has_precomputed_data", False):
+        raise RuntimeError("Cached 6D state generation requires precomputed MATLAB data")
+
+    rng = np.random.default_rng(seed=seed)
+    sgis = np.asarray(env.sgis, dtype=np.float64)
+    vgi = np.asarray(env.vgi, dtype=np.float64)
+    vsn = np.asarray(env.vsn, dtype=np.float64)
+
+    sgis_window = min(2000, sgis.shape[1])
+    signal_window = min(10000, vgi.shape[1])
+    signal_stride = 2
+
+    max_sgis_start = max(1, sgis.shape[1] - sgis_window + 1)
+    max_signal_start = max(1, vgi.shape[1] - signal_window + 1)
+
+    states = []
+    for _ in range(num_states):
+        sgis_start = int(rng.integers(0, max_sgis_start))
+        signal_start = int(rng.integers(0, max_signal_start))
+
+        sgis_slice = sgis[:, sgis_start : sgis_start + sgis_window]
+        vgi_slice = vgi[:, signal_start : signal_start + signal_window : signal_stride]
+        vsn_slice = vsn[:, signal_start : signal_start + signal_window : signal_stride]
+        states.append(_compute_cached_6d_state(env, sgis_slice, vgi_slice, vsn_slice))
+
+        if len(states) % max(1, num_states // 20) == 0 or len(states) % 50 == 0:
+            print(f"[Progress] Collected {len(states)}/{num_states} states ({100 * len(states) // num_states}%)", flush=True)
+
+    return np.stack(states, axis=0).astype(np.float32)
+
+
 def collect_states(
     *,
     num_states: int,
@@ -52,6 +130,9 @@ def collect_states(
 ) -> np.ndarray:
     rng = np.random.default_rng(seed=seed)
     env = _make_env(source=source, tmax=tmax, pd=pd, mode=mode)
+
+    if source == "online_cached":
+        return _collect_windowed_cached_states(env, num_states=num_states, seed=seed)
 
     states = []
     obs, _ = env.reset(seed=seed)
@@ -139,5 +220,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
 

@@ -1,0 +1,20 @@
+{
+  "model": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/model_int8_96_96.tflite",
+  "dtype": "int8",
+  "obs_dim": 6,
+  "input_shape": [
+    1,
+    6
+  ],
+  "states_path_used": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/states_eval_6d.npy",
+  "runs": 10,
+  "warmup": 1,
+  "threads": 1,
+  "inner_repeats": 5,
+  "default_delegates_enabled": true,
+  "mean_ms": 0.0013600000000035806,
+  "p50_ms": 0.0013542000000033028,
+  "p90_ms": 0.0013783199999961582,
+  "min_ms": 0.001333400000014251,
+  "max_ms": 0.0014082000000303907
+}

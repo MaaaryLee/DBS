@@ -1,0 +1,28 @@
+{
+  "variant": "fp32",
+  "model_path": "tflite_actors/model_fp32.tflite",
+  "root_header": "model.h",
+  "firmware_header": "esp32_firmware/model.h",
+  "model_size_bytes": 6840,
+  "header_size_bytes": 42352,
+  "model_info": {
+    "input_shape": [
+      1,
+      4
+    ],
+    "input_dtype": "float32",
+    "input_quantization": [
+      0.0,
+      0
+    ],
+    "output_shape": [
+      1,
+      2
+    ],
+    "output_dtype": "float32",
+    "output_quantization": [
+      0.0,
+      0
+    ]
+  }
+}

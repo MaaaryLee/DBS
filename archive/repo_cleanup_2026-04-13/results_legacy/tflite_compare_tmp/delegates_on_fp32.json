@@ -1,0 +1,20 @@
+{
+  "model": "/Users/maaary/Downloads/DBS-main/results/larger_models/64_64/model_fp32_64_64.tflite",
+  "dtype": "fp32",
+  "obs_dim": 6,
+  "input_shape": [
+    1,
+    6
+  ],
+  "states_path_used": "states_eval_6d.npy",
+  "runs": 200,
+  "warmup": 10,
+  "threads": 1,
+  "inner_repeats": 50,
+  "default_delegates_enabled": true,
+  "mean_ms": 0.0013293497000000265,
+  "p50_ms": 0.0012629099999994509,
+  "p90_ms": 0.0013710720000013055,
+  "min_ms": 0.0012450000000008288,
+  "max_ms": 0.004013340000001975
+}

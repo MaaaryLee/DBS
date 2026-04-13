@@ -1,221 +1,99 @@
 # Repository Organization
 
-## Directory Structure
+This file lists the main project folders and the files that matter most for training, deployment, and benchmarking.
 
-```
-DBS-1/
-├── core/                           # Core training and evaluation scripts
-│   ├── BGN_MC.py                   # Main MATLAB-integrated environment
-│   ├── BGN_MC_Online.py            # Online MATLAB workflow variant
-│   ├── training.py                 # TD3 training script
-│   ├── quantize_model.py           # Model quantization (FP32 → INT8)
-│   ├── comprehensive_quantization_eval.py  # Comprehensive evaluation
-│   ├── power_profile_windows.py    # Power profiling tool
-│   ├── matlab_online_workflow.py  # MATLAB online integration
-│   ├── controller_validation.py   # Controller validation
-│   ├── example_matlab_online.py   # MATLAB online example
-│   └── test_fresh_dynamics.py      # Dynamics testing
-│
-├── deployment/                     # Model deployment conversion scripts
-│   ├── convert_to_onnx.py          # PyTorch → ONNX
-│   ├── convert_onnx_to_tf.py       # ONNX → TensorFlow
-│   ├── convert_tf_to_tflite.py     # TensorFlow → TFLite
-│   └── convert_tflite_to_c.py      # TFLite → C byte array
-│
-├── matlab/                         # MATLAB simulation files
-│   ├── bgn_init.m                  # MATLAB initialization
-│   ├── bgn_step.m                  # MATLAB simulation step
-│   ├── bgn_vars.mat                # MATLAB state variables
-│   └── gating/                      # MATLAB gating functions
-│       ├── activations.m
-│       ├── gpe_*.m                 # GPE gating functions
-│       ├── stn_*.m                 # STN gating functions
-│       └── th_*.m                  # Thalamus gating functions
-│
-├── matlab_data/                    # MATLAB simulation data and results
-│   ├── run_simulation_online.m     # Online simulation script
-│   ├── simulation_params.json      # Simulation parameters
-│   ├── simulation_results.mat      # Simulation results
-│   └── MATLAB_Online_Instructions.md
-│
-├── config/                         # Configuration and setup files
-│   ├── requirements.txt            # Main Python dependencies
-│   ├── requirements_training.txt   # Training-specific dependencies
-│   ├── requirements_deployment.txt # Deployment-specific dependencies
-│   ├── install_matlab_engine.bat   # Windows MATLAB engine installer
-│   ├── install_matlab_engine_admin.ps1  # Admin installer script
-│   └── activate_training.sh        # Training environment activation
-│
-├── notebooks/                      # Jupyter notebooks
-│   ├── examples.ipynb              # Main examples and tutorials
-│   └── bgnm_testing.ipynb          # BGN model testing notebook
-│
-├── assets/                         # Images, plots, and temporary files
-│   ├── PI_Presentation_Results.png
-│   ├── quantization_results.png
-│   ├── system_validation_results.png
-│   ├── power_profile_fp32_32_32.json
-│   ├── power_profile_int8_32_32.json
-│   ├── states_eval.npy             # Calibration states
-│   └── gating.zip                   # Gating functions archive
-│
-├── scripts/                        # Utility and test scripts
-│   ├── setup_environment.py        # Environment setup verification
-│   ├── test_matlab_setup.py        # MATLAB connection test
-│   ├── test_bgn_environment.py     # BGN environment test
-│   ├── test_training.py            # Training verification
-│   ├── test_quantized_model.py     # Quantization test
-│   ├── measure_fp32_latency.py     # FP32 latency measurement
-│   ├── measure_pytorch_int8_latency.py  # PyTorch INT8 latency
-│   ├── measure_tflite_fp32_latency.py   # TFLite FP32 latency
-│   ├── measure_tflite_int8_latency.py   # TFLite INT8 latency
-│   ├── plot_latency_comparison.py  # Latency comparison plots
-│   ├── convert_saved_model_to_tflite_int8.py  # INT8 TFLite conversion
-│   ├── verify_examples_workflow.py # End-to-end workflow verification
-│   ├── quick_setup_check.py        # Quick environment check
-│   ├── check_matlab_status.py      # MATLAB status checker
-│   └── test_cell1.py               # Cell testing script
-│
-├── esp32_firmware/                 # ESP32 deployment firmware
-│   ├── dbs_inference.ino           # Main inference firmware
-│   ├── power_monitor.ino           # Power monitoring firmware
-│   ├── model.h                     # TFLite model as C array
-│   └── README.md                   # ESP32 setup instructions
-│
-├── docs/                           # Documentation
-│   ├── SIMPLE_RESULTS_EXPLANATION.md
-│   ├── DEPLOYMENT_FORMATS_EXPLANATION.md
-│   ├── DEPLOYMENT_COMPLETE.md
-│   ├── ENVIRONMENT_SETUP.md
-│   ├── POWER_PROFILING_RESULTS.md
-│   ├── MATLAB_USAGE_EXPLANATION.md
-│   ├── MSE_EXPLANATION.md
-│   ├── POWER_ANALYSIS_CORRECTION.md
-│   ├── REPO_CLEANUP_PLAN.md
-│   └── TODO_LIST.md
-│
-├── results/                        # Evaluation results and outputs
-│   ├── power_profile_*.json        # Power profiling data
-│   ├── *_latency.json              # Latency measurements
-│   ├── latency_comparison_*.png    # Latency comparison plots
-│   ├── quantization_eval_results_*.json  # Quantization evaluation
-│   ├── quant_eval_run*/            # Quantization evaluation runs
-│   │   ├── plots/                  # Evaluation plots
-│   │   └── *.json                   # Evaluation results
-│   └── quantization_eval_plots/    # Legacy plots
-│
-├── models/                         # Trained models and checkpoints
-│   ├── TD3_32_32/                  # 32x32 hidden layers
-│   ├── TD3_48_32/                  # 48x32 hidden layers
-│   ├── TD3_64_32/                  # 64x32 hidden layers
-│   ├── TD3_64_64/                  # 64x64 hidden layers
-│   └── policies/                    # Actor checkpoints
-│       ├── actor_fp32_*.pt         # FP32 actors
-│       ├── actor_int8_dynamic_*.pt # Dynamic INT8 actors
-│       ├── actor_int8_static_*.pt  # Static INT8 actors
-│       └── quantization_summary_*.json  # Quantization summaries
-│
-├── onnx_actors/                    # ONNX model exports
-│   └── model.onnx
-│
-├── tf_model/                       # TensorFlow SavedModel
-│   ├── saved_model.pb
-│   ├── fingerprint.pb
-│   └── variables/
-│       ├── variables.data-00000-of-00001
-│       └── variables.index
-│
-├── tflite_actors/                 # TensorFlow Lite models
-│   ├── model.tflite                # Original TFLite
-│   ├── model_fp32.tflite           # FP32 TFLite
-│   └── model_int8.tflite           # INT8 TFLite
-│
-├── logs/                          # Training logs (TensorBoard)
-│   └── TD3_32_32_0/
-│       └── events.out.tfevents.*
-│
-├── temp_eval/                      # Temporary evaluation results
-│   ├── plots/
-│   └── quantization_eval_results_*.json
-│
-├── README.md                       # Main project documentation
-└── REPO_ORGANIZATION.md            # This file
-```
+## Key Files
 
-## Directory Descriptions
+- [README.md](/Users/maaary/Downloads/DBS-main/README.md)
+  Project overview, workflow, and deployment notes.
+- [results/paper_quantization/quantization_paper_metrics.md](/Users/maaary/Downloads/DBS-main/results/paper_quantization/quantization_paper_metrics.md)
+  Quantization metrics summary and caveats.
+- [results/larger_models/summary_6d_models.json](/Users/maaary/Downloads/DBS-main/results/larger_models/summary_6d_models.json)
+  Size sweep summary for the 6D TFLite and ESP32 experiments.
+- [results/README.md](/Users/maaary/Downloads/DBS-main/results/README.md)
+  Guide to the main result files.
 
-### `core/` - Core Scripts
-Contains the main training, evaluation, and environment scripts:
-- **BGN_MC.py**: Main environment integrating MATLAB brain model with Python RL
-- **training.py**: Train TD3 models with configurable architectures
-- **quantize_model.py**: Convert FP32 models to INT8 (dynamic and static)
-- **comprehensive_quantization_eval.py**: Full evaluation pipeline
-- **power_profile_windows.py**: CPU usage and inference time profiling
+## Active Folders
 
-### `deployment/` - Deployment Pipeline
-Model format conversion scripts following the pipeline: PyTorch → ONNX → TensorFlow → TFLite → C
-- Each script handles a specific conversion step
-- Final output is `model.h` C array for microcontroller deployment
+### `core/`
+- Primary research code.
+- Most important files:
+  - [core/training.py](/Users/maaary/Downloads/DBS-main/core/training.py)
+  - [core/BGN_MC.py](/Users/maaary/Downloads/DBS-main/core/BGN_MC.py)
+  - [core/BGN_MC_Online.py](/Users/maaary/Downloads/DBS-main/core/BGN_MC_Online.py)
+  - [core/quantize_model.py](/Users/maaary/Downloads/DBS-main/core/quantize_model.py)
 
-### `matlab/` - MATLAB Simulation Files
-MATLAB scripts and functions for the BGN brain model:
-- Core simulation functions (`bgn_init.m`, `bgn_step.m`)
-- Gating functions for different brain regions
-- State variables and initialization data
+### `deployment/`
+- Export pipeline from trained policy to deployable model formats.
+- Most important files:
+  - [deployment/convert_to_onnx.py](/Users/maaary/Downloads/DBS-main/deployment/convert_to_onnx.py)
+  - [deployment/convert_onnx_to_tf.py](/Users/maaary/Downloads/DBS-main/deployment/convert_onnx_to_tf.py)
+  - [deployment/convert_tf_to_tflite.py](/Users/maaary/Downloads/DBS-main/deployment/convert_tf_to_tflite.py)
+  - [deployment/convert_tflite_to_c.py](/Users/maaary/Downloads/DBS-main/deployment/convert_tflite_to_c.py)
 
-### `matlab_data/` - MATLAB Data
-Simulation data, parameters, and results from MATLAB runs
+### `scripts/`
+- Reproducible experiment helpers and benchmark runners.
+- Most important files:
+  - [scripts/convert_saved_model_to_tflite_int8.py](/Users/maaary/Downloads/DBS-main/scripts/convert_saved_model_to_tflite_int8.py)
+  - [scripts/evaluate_tflite_quantization.py](/Users/maaary/Downloads/DBS-main/scripts/evaluate_tflite_quantization.py)
+  - [scripts/measure_tflite_fp32_latency.py](/Users/maaary/Downloads/DBS-main/scripts/measure_tflite_fp32_latency.py)
+  - [scripts/measure_tflite_int8_latency.py](/Users/maaary/Downloads/DBS-main/scripts/measure_tflite_int8_latency.py)
+  - [scripts/prepare_esp32_benchmark.py](/Users/maaary/Downloads/DBS-main/scripts/prepare_esp32_benchmark.py)
+  - [scripts/run_esp32_benchmark.py](/Users/maaary/Downloads/DBS-main/scripts/run_esp32_benchmark.py)
+  - [scripts/run_espidf_benchmark_variant.py](/Users/maaary/Downloads/DBS-main/scripts/run_espidf_benchmark_variant.py)
+  - [scripts/assemble_quantization_paper_metrics.py](/Users/maaary/Downloads/DBS-main/scripts/assemble_quantization_paper_metrics.py)
 
-### `config/` - Configuration Files
-Setup and dependency files:
-- Python requirements for different use cases
-- MATLAB Engine installation scripts
-- Environment activation scripts
+### `matlab/`
+- MATLAB BGN simulator and cached source data.
+- Most important files:
+  - [matlab/bgn_init.m](/Users/maaary/Downloads/DBS-main/matlab/bgn_init.m)
+  - [matlab/bgn_step.m](/Users/maaary/Downloads/DBS-main/matlab/bgn_step.m)
+  - [matlab/bgn_vars.mat](/Users/maaary/Downloads/DBS-main/matlab/bgn_vars.mat)
 
-### `notebooks/` - Jupyter Notebooks
-Interactive notebooks for examples, tutorials, and testing
+### `matlab_data/`
+- MATLAB Online bridge artifacts and downloaded simulation outputs.
+- Most important files:
+  - [matlab_data/run_simulation_online.m](/Users/maaary/Downloads/DBS-main/matlab_data/run_simulation_online.m)
+  - [matlab_data/simulation_results.mat](/Users/maaary/Downloads/DBS-main/matlab_data/simulation_results.mat)
+  - [matlab_data/simulation_results-2.mat](/Users/maaary/Downloads/DBS-main/matlab_data/simulation_results-2.mat)
 
-### `assets/` - Assets and Temporary Files
-Images, plots, calibration data, and other temporary files
+### `esp32_firmware/`
+- Arduino-facing firmware and model headers.
+- Most important files:
+  - [esp32_firmware/README.md](/Users/maaary/Downloads/DBS-main/esp32_firmware/README.md)
+  - [esp32_firmware/dbs_inference.ino](/Users/maaary/Downloads/DBS-main/esp32_firmware/dbs_inference.ino)
+  - [esp32_firmware/dbs_benchmark/dbs_benchmark.ino](/Users/maaary/Downloads/DBS-main/esp32_firmware/dbs_benchmark/dbs_benchmark.ino)
+  - [esp32_firmware/dbs_ardutflite_benchmark/dbs_ardutflite_benchmark.ino](/Users/maaary/Downloads/DBS-main/esp32_firmware/dbs_ardutflite_benchmark/dbs_ardutflite_benchmark.ino)
 
-### `scripts/` - Utility Scripts
-Test, verification, and measurement scripts:
-- Environment setup and testing
-- Latency measurement tools
-- Workflow verification
+### `espidf_firmware/`
+- Native ESP-IDF benchmark project for `esp-tflite-micro + ESP-NN`.
+- Most important folder:
+  - [espidf_firmware/dbs_espnn_benchmark](/Users/maaary/Downloads/DBS-main/espidf_firmware/dbs_espnn_benchmark)
 
-### `esp32_firmware/` - ESP32 Deployment
-Complete firmware for ESP32 microcontroller deployment
+### `models/`
+- Trained checkpoints and saved policies.
+- Most important folders:
+  - [models/TD3_80_80](/Users/maaary/Downloads/DBS-main/models/TD3_80_80)
+  - [models/TD3_96_96](/Users/maaary/Downloads/DBS-main/models/TD3_96_96)
+  - [models/TD3_128_128](/Users/maaary/Downloads/DBS-main/models/TD3_128_128)
+  - [models/policies](/Users/maaary/Downloads/DBS-main/models/policies)
 
-### `docs/` - Documentation
-All project documentation, guides, and explanations
+### `results/`
+- Active results kept for review and manuscript writing.
+- See [results/README.md](/Users/maaary/Downloads/DBS-main/results/README.md).
 
-### `results/` - Evaluation Results
-All evaluation outputs, measurements, and plots organized by evaluation run
+## Root-Level Files Worth Keeping In Mind
 
-### `models/` - Trained Models
-Trained TD3 models and actor checkpoints organized by architecture
+- [states_eval_4d.npy](/Users/maaary/Downloads/DBS-main/states_eval_4d.npy)
+  Legacy 4D calibration/eval state file.
+- [states_eval_6d.npy](/Users/maaary/Downloads/DBS-main/states_eval_6d.npy)
+  Original degenerate 6D file retained as evidence of the earlier calibration bug.
+- [states_eval_6d_repaired.npy](/Users/maaary/Downloads/DBS-main/states_eval_6d_repaired.npy)
+  Repaired 6D state set used for quantization evaluation.
+- [model.h](/Users/maaary/Downloads/DBS-main/model.h)
+  Active root-level model header mirrored for firmware flows that still expect it.
 
-### Deployment Outputs
-- **onnx_actors/**: ONNX model exports
-- **tf_model/**: TensorFlow SavedModel format
-- **tflite_actors/**: TensorFlow Lite models (FP32 and INT8)
+## Archived Material
 
-### `logs/` - Training Logs
-TensorBoard event files for training visualization
-
-## File Organization Principles
-
-1. **Separation of Concerns**: Core scripts, deployment, and utilities are clearly separated
-2. **Logical Grouping**: Related files are grouped together (e.g., all MATLAB files in `matlab/`)
-3. **Clear Naming**: Directory names clearly indicate their purpose
-4. **Minimal Root Directory**: Only essential files (README.md, REPO_ORGANIZATION.md) in root
-5. **Consistent Structure**: Similar types of files follow the same organizational pattern
-
-## Usage Guidelines
-
-- **Training**: Use scripts from `core/` directory
-- **Deployment**: Use scripts from `deployment/` directory in sequence
-- **Testing**: Use scripts from `scripts/` directory
-- **Configuration**: Check `config/` for setup files
-- **Documentation**: Refer to `docs/` for detailed guides
+- [archive/repo_cleanup_2026-04-13](/Users/maaary/Downloads/DBS-main/archive/repo_cleanup_2026-04-13)
+  Legacy outputs, temporary artifacts, and older notes moved out of the main workflow.

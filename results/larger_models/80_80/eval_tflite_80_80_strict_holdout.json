@@ -1,0 +1,287 @@
+{
+  "fp32_model": "results/larger_models/80_80/model_fp32_80_80.tflite",
+  "int8_model": "results/larger_models/80_80/model_int8_80_80_strict.tflite",
+  "states_path": "results/strict_eval/states_heldout_6d_strict.npy",
+  "states_shape": [
+    500,
+    6
+  ],
+  "state_coverage": {
+    "unique_rows": 499,
+    "per_dim_std": [
+      0.05603565275669098,
+      0.024508025497198105,
+      0.03351782634854317,
+      0.0059409597888588905,
+      1.1350816488265991,
+      0.608301043510437
+    ],
+    "per_dim_min": [
+      -0.23121732473373413,
+      -0.09408207982778549,
+      0.09726566076278687,
+      0.013256681151688099,
+      -3.6252102851867676,
+      -0.29572775959968567
+    ],
+    "per_dim_max": [
+      0.0164914783090353,
+      0.01978430338203907,
+      0.2354956865310669,
+      0.04578589275479317,
+      -1.0545811653137207,
+      1.3431962728500366
+    ],
+    "degenerate": false
+  },
+  "model_size_bytes": {
+    "fp32": 30536,
+    "int8": 9808,
+    "reduction_percent": 67.88053445113964
+  },
+  "fp32_io": {
+    "input": {
+      "shape": [
+        1,
+        6
+      ],
+      "dtype": "<class 'numpy.float32'>",
+      "quantization": [
+        0.0,
+        0
+      ]
+    },
+    "output": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "<class 'numpy.float32'>",
+      "quantization": [
+        0.0,
+        0
+      ]
+    }
+  },
+  "int8_io": {
+    "input": {
+      "shape": [
+        1,
+        6
+      ],
+      "dtype": "<class 'numpy.int8'>",
+      "quantization": [
+        0.01942584104835987,
+        59
+      ]
+    },
+    "output": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "<class 'numpy.int8'>",
+      "quantization": [
+        0.0078125,
+        0
+      ]
+    }
+  },
+  "input_saturation": {
+    "sat_min_count": 0,
+    "sat_max_count": 1,
+    "sat_total_count": 1,
+    "sat_total_fraction": 0.0003333333333333333
+  },
+  "output_coverage": {
+    "fp32": {
+      "mean": [
+        -0.6192771196365356,
+        0.2612778842449188
+      ],
+      "std": [
+        0.1659291386604309,
+        0.1734274923801422
+      ],
+      "min": [
+        -0.7765310406684875,
+        0.032156314700841904
+      ],
+      "max": [
+        -0.3824242353439331,
+        0.4237791895866394
+      ]
+    },
+    "int8": {
+      "mean": [
+        -0.618234395980835,
+        0.2597343623638153
+      ],
+      "std": [
+        0.16535566747188568,
+        0.1734260767698288
+      ],
+      "min": [
+        -0.78125,
+        0.03125
+      ],
+      "max": [
+        -0.3828125,
+        0.421875
+      ]
+    }
+  },
+  "fidelity": {
+    "mse": 7.77706372900866e-06,
+    "mae": 0.0023669421207159758,
+    "max_abs_diff": 0.009056150913238525,
+    "p50_abs_diff": 0.002064339816570282,
+    "p90_abs_diff": 0.004625338315963745,
+    "per_output": [
+      {
+        "index": 0,
+        "mae": 0.002591785043478012,
+        "max_abs_diff": 0.009056150913238525,
+        "pearson_r": 0.9998659646170485
+      },
+      {
+        "index": 1,
+        "mae": 0.0021420991979539394,
+        "max_abs_diff": 0.0083446204662323,
+        "pearson_r": 0.9999268547910564
+      }
+    ]
+  },
+  "env_eval": {
+    "fp32": {
+      "episodes": 5,
+      "mean_reward": -1.8973202472427615,
+      "std_reward": 2.220446049250313e-16,
+      "min_reward": -1.8973202472427617,
+      "max_reward": -1.8973202472427617,
+      "mean_steps": 10.0,
+      "mean_frequency_hz": 21.348468214273453,
+      "mean_amplitude_ma": 3557.2757571935654,
+      "reward_trace": [
+        -1.8973202472427617,
+        -1.8973202472427617,
+        -1.8973202472427617,
+        -1.8973202472427617,
+        -1.8973202472427617
+      ]
+    },
+    "int8": {
+      "episodes": 5,
+      "mean_reward": -1.8913165932396183,
+      "std_reward": 0.0,
+      "min_reward": -1.8913165932396183,
+      "max_reward": -1.8913165932396183,
+      "mean_steps": 10.0,
+      "mean_frequency_hz": 20.95703125,
+      "mean_amplitude_ma": 3554.6875,
+      "reward_trace": [
+        -1.8913165932396183,
+        -1.8913165932396183,
+        -1.8913165932396183,
+        -1.8913165932396183,
+        -1.8913165932396183
+      ]
+    }
+  },
+  "replay_eval": {
+    "fp32": {
+      "replay_path": "results/strict_eval/replay_episodes_6d_strict.npz",
+      "episodes": 50,
+      "steps_per_episode": 10,
+      "observation_dim": 6,
+      "action_summary": {
+        "mean": [
+          -0.6192771196365356,
+          0.2612778842449188
+        ],
+        "std": [
+          0.1659291386604309,
+          0.1734274923801422
+        ],
+        "min": [
+          -0.7765310406684875,
+          0.032156314700841904
+        ],
+        "max": [
+          -0.3824242353439331,
+          0.4237791895866394
+        ]
+      },
+      "stim_summary": {
+        "frequency_hz_mean": 35.21685791015625,
+        "frequency_hz_std": 15.348442077636719,
+        "frequency_hz_min": 20.670879364013672,
+        "frequency_hz_max": 57.12575912475586,
+        "amplitude_ma_mean": 3153.195068359375,
+        "amplitude_ma_std": 433.5687561035156,
+        "amplitude_ma_min": 2580.390869140625,
+        "amplitude_ma_max": 3559.4482421875
+      }
+    },
+    "int8": {
+      "replay_path": "results/strict_eval/replay_episodes_6d_strict.npz",
+      "episodes": 50,
+      "steps_per_episode": 10,
+      "observation_dim": 6,
+      "action_summary": {
+        "mean": [
+          -0.618234395980835,
+          0.2597343623638153
+        ],
+        "std": [
+          0.16535566747188568,
+          0.1734260767698288
+        ],
+        "min": [
+          -0.78125,
+          0.03125
+        ],
+        "max": [
+          -0.3828125,
+          0.421875
+        ]
+      },
+      "stim_summary": {
+        "frequency_hz_mean": 35.31332015991211,
+        "frequency_hz_std": 15.295408248901367,
+        "frequency_hz_min": 20.234375,
+        "frequency_hz_max": 57.08984375,
+        "amplitude_ma_mean": 3149.3359375,
+        "amplitude_ma_std": 433.5644836425781,
+        "amplitude_ma_min": 2578.125,
+        "amplitude_ma_max": 3554.6875
+      }
+    },
+    "agreement": {
+      "action_mae": 0.0023669421207159758,
+      "action_max_abs_diff": 0.009056150913238525,
+      "action_p90_abs_diff": 0.004625338315963745,
+      "frequency_hz_mae": 0.23974019289016724,
+      "amplitude_ma_mae": 5.355259895324707,
+      "per_action_dim": [
+        {
+          "index": 0,
+          "mae": 0.002591785043478012,
+          "max_abs_diff": 0.009056150913238525,
+          "pearson_r": 0.9998659646170485
+        },
+        {
+          "index": 1,
+          "mae": 0.0021420991979539394,
+          "max_abs_diff": 0.0083446204662323,
+          "pearson_r": 0.9999268547910564
+        }
+      ]
+    },
+    "interpretation": "Replay control agreement uses many varied held-out trajectories and compares the FP32 and INT8 action sequences on the same inputs. It is stronger than the deterministic cached smoke test, but it is still not a full fresh closed-loop simulation benchmark."
+  },
+  "warnings": [
+    "Cached-environment reward traces are deterministic in this setup; treat env_eval as a functional smoke test, not a stochastic control benchmark.",
+    "Replay_eval is stronger than the cached smoke test because it covers many varied held-out trajectories, but it still replays cached signals rather than running a fresh closed-loop MATLAB simulation."
+  ]
+}

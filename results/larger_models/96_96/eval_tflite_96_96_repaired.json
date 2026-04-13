@@ -1,0 +1,194 @@
+{
+  "fp32_model": "results/larger_models/96_96/model_fp32_96_96.tflite",
+  "int8_model": "results/larger_models/96_96/model_int8_96_96_repaired.tflite",
+  "states_path": "states_eval_6d_repaired.npy",
+  "states_shape": [
+    1000,
+    6
+  ],
+  "state_coverage": {
+    "unique_rows": 987,
+    "per_dim_std": [
+      0.05489477142691612,
+      0.023857496678829193,
+      0.03317311406135559,
+      0.005721105728298426,
+      1.1340482234954834,
+      0.5991162061691284
+    ],
+    "per_dim_min": [
+      -0.23135511577129364,
+      -0.09411834925413132,
+      0.09725099802017212,
+      0.012967707589268684,
+      -3.6252102851867676,
+      -0.29572775959968567
+    ],
+    "per_dim_max": [
+      0.016493039205670357,
+      0.01978430338203907,
+      0.2356458306312561,
+      0.04578589275479317,
+      -1.0140098333358765,
+      1.3431962728500366
+    ],
+    "degenerate": false
+  },
+  "model_size_bytes": {
+    "fp32": 42440,
+    "int8": 12880,
+    "reduction_percent": 69.65127238454288
+  },
+  "fp32_io": {
+    "input": {
+      "shape": [
+        1,
+        6
+      ],
+      "dtype": "<class 'numpy.float32'>",
+      "quantization": [
+        0.0,
+        0
+      ]
+    },
+    "output": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "<class 'numpy.float32'>",
+      "quantization": [
+        0.0,
+        0
+      ]
+    }
+  },
+  "int8_io": {
+    "input": {
+      "shape": [
+        1,
+        6
+      ],
+      "dtype": "<class 'numpy.int8'>",
+      "quantization": [
+        0.01948394812643528,
+        58
+      ]
+    },
+    "output": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "<class 'numpy.int8'>",
+      "quantization": [
+        0.0078125,
+        0
+      ]
+    }
+  },
+  "input_saturation": {
+    "sat_min_count": 0,
+    "sat_max_count": 0,
+    "sat_total_count": 0,
+    "sat_total_fraction": 0.0
+  },
+  "output_coverage": {
+    "fp32": {
+      "mean": [
+        -0.7824239730834961,
+        -0.6878851056098938
+      ],
+      "std": [
+        0.17304421961307526,
+        0.15861819684505463
+      ],
+      "min": [
+        -0.9379624724388123,
+        -0.8332184553146362
+      ],
+      "max": [
+        -0.516462504863739,
+        -0.46109628677368164
+      ]
+    },
+    "int8": {
+      "mean": [
+        -0.7824921607971191,
+        -0.6858906149864197
+      ],
+      "std": [
+        0.17277228832244873,
+        0.1564762145280838
+      ],
+      "min": [
+        -0.9375,
+        -0.8359375
+      ],
+      "max": [
+        -0.515625,
+        -0.4609375
+      ]
+    }
+  },
+  "fidelity": {
+    "mse": 9.210164535033982e-06,
+    "mae": 0.002338831312954426,
+    "max_abs_diff": 0.008183836936950684,
+    "p50_abs_diff": 0.0021747350692749023,
+    "p90_abs_diff": 0.0046808689832687385,
+    "per_output": [
+      {
+        "index": 0,
+        "mae": 0.0012717326171696186,
+        "max_abs_diff": 0.008183836936950684,
+        "pearson_r": 0.9999271427628249
+      },
+      {
+        "index": 1,
+        "mae": 0.003405930008739233,
+        "max_abs_diff": 0.008159160614013672,
+        "pearson_r": 0.9998908589514165
+      }
+    ]
+  },
+  "env_eval": {
+    "fp32": {
+      "episodes": 5,
+      "mean_reward": -1.3665294724205264,
+      "std_reward": 0.0,
+      "min_reward": -1.3665294724205264,
+      "max_reward": -1.3665294724205264,
+      "mean_steps": 10.0,
+      "mean_frequency_hz": 5.75095921754837,
+      "mean_amplitude_ma": 417.01287031173706,
+      "reward_trace": [
+        -1.3665294724205264,
+        -1.3665294724205264,
+        -1.3665294724205264,
+        -1.3665294724205264,
+        -1.3665294724205264
+      ]
+    },
+    "int8": {
+      "episodes": 5,
+      "mean_reward": -1.3681915932396185,
+      "std_reward": 0.0,
+      "min_reward": -1.3681915932396185,
+      "max_reward": -1.3681915932396185,
+      "mean_steps": 10.0,
+      "mean_frequency_hz": 5.78125,
+      "mean_amplitude_ma": 429.6875,
+      "reward_trace": [
+        -1.3681915932396185,
+        -1.3681915932396185,
+        -1.3681915932396185,
+        -1.3681915932396185,
+        -1.3681915932396185
+      ]
+    }
+  },
+  "warnings": [
+    "Cached-environment reward traces are deterministic in this setup; treat env_eval as a functional smoke test, not a stochastic control benchmark."
+  ]
+}
