@@ -19,6 +19,16 @@
 
 namespace {
 
+#if CONFIG_ESP32S3_DATA_CACHE_64KB
+constexpr int kDataCacheSizeKB = 64;
+#elif CONFIG_ESP32S3_DATA_CACHE_32KB
+constexpr int kDataCacheSizeKB = 32;
+#elif CONFIG_ESP32S3_DATA_CACHE_16KB
+constexpr int kDataCacheSizeKB = 16;
+#else
+constexpr int kDataCacheSizeKB = 0;
+#endif
+
 constexpr size_t kTensorArenaSize = static_cast<size_t>(DBS_TENSOR_ARENA_SIZE_BYTES);
 constexpr int kMaxObservationDim = 8;
 constexpr unsigned long kWarmupRuns = DBS_BENCHMARK_WARMUP_RUNS;
@@ -128,6 +138,7 @@ void PrintObservation() {
 void PrintModelInfo() {
   printf("=== ESP-IDF DBS Benchmark ===\n");
   printf("framework=espidf runtime=esp-tflite-micro target=esp32s3\n");
+  printf("data_cache_kb=%d\n", kDataCacheSizeKB);
   printf("model_len=%u\n", dbs_model_len);
   printf("tensor_arena_bytes=%u\n", static_cast<unsigned int>(kTensorArenaSize));
   printf("input_dim=%d\n", input_feature_count);
@@ -245,11 +256,12 @@ void PrintBenchResult(unsigned long runs) {
 
   printf(
       "BENCH_RESULT framework=espidf runtime=esp-tflite-micro runs=%lu warmup_runs=%lu model_io=%s "
-      "input_dim=%d output_dim=%d quant_avg_us=%.2f invoke_avg_us=%.2f dequant_avg_us=%.2f total_avg_us=%.2f "
+      "data_cache_kb=%d input_dim=%d output_dim=%d quant_avg_us=%.2f invoke_avg_us=%.2f dequant_avg_us=%.2f total_avg_us=%.2f "
       "min_invoke_us=%" PRIu32 " max_invoke_us=%" PRIu32 "\n",
       runs,
       kWarmupRuns,
       ModelIOTypeName(),
+      kDataCacheSizeKB,
       input_feature_count,
       output_feature_count,
       static_cast<double>(avg_quant_us),
