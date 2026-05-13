@@ -1,0 +1,22 @@
+{
+  "port": "/dev/cu.usbmodem101",
+  "baud": 115200,
+  "mode": "legacy",
+  "runs_requested": 50,
+  "observation": null,
+  "bench_result": {
+    "framework": "espidf",
+    "runtime": "esp-tflite-micro",
+    "runs": "200",
+    "warmup_runs": "20",
+    "model_io": "INT8",
+    "input_dim": "6",
+    "output_dim": "2",
+    "quant_avg_us": "5.74",
+    "invoke_avg_us": "435.79",
+    "dequant_avg_us": "1.22",
+    "total_avg_us": "442.76",
+    "min_invoke_us": "435",
+    "max_invoke_us": "444"
+  }
+}

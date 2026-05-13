@@ -1,0 +1,117 @@
+{
+  "fp32_model": "results/larger_models/80_80/model_fp32_80_80.tflite",
+  "int8_model": "results/larger_models/80_80/model_int8_80_80.tflite",
+  "states_path": "states_eval_6d.npy",
+  "states_shape": [
+    1000,
+    6
+  ],
+  "model_size_bytes": {
+    "fp32": 30536,
+    "int8": 9808,
+    "reduction_percent": 67.88053445113964
+  },
+  "fp32_io": {
+    "input": {
+      "shape": [
+        1,
+        6
+      ],
+      "dtype": "<class 'numpy.float32'>",
+      "quantization": [
+        0.0,
+        0
+      ]
+    },
+    "output": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "<class 'numpy.float32'>",
+      "quantization": [
+        0.0,
+        0
+      ]
+    }
+  },
+  "int8_io": {
+    "input": {
+      "shape": [
+        1,
+        6
+      ],
+      "dtype": "<class 'numpy.int8'>",
+      "quantization": [
+        0.014676137827336788,
+        119
+      ]
+    },
+    "output": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "<class 'numpy.int8'>",
+      "quantization": [
+        0.0078125,
+        0
+      ]
+    }
+  },
+  "input_saturation": {
+    "sat_min_count": 0,
+    "sat_max_count": 0,
+    "sat_total_count": 0,
+    "sat_total_fraction": 0.0
+  },
+  "fidelity": {
+    "mse": 6.946808298380347e-06,
+    "mae": 0.002308025723323226,
+    "max_abs_diff": 0.003580749034881592,
+    "p50_abs_diff": 0.0023080259561538696,
+    "p90_abs_diff": 0.003580749034881592,
+    "per_output": [
+      {
+        "index": 0,
+        "mae": 0.003580749034881592,
+        "max_abs_diff": 0.003580749034881592,
+        "pearson_r": NaN
+      },
+      {
+        "index": 1,
+        "mae": 0.0010353028774261475,
+        "max_abs_diff": 0.0010353028774261475,
+        "pearson_r": NaN
+      }
+    ]
+  },
+  "env_eval": {
+    "fp32": {
+      "episodes": 1,
+      "mean_reward": -1.8973202472427617,
+      "std_reward": 0.0,
+      "min_reward": -1.8973202472427617,
+      "max_reward": -1.8973202472427617,
+      "mean_steps": 10.0,
+      "mean_frequency_hz": 21.348468214273453,
+      "mean_amplitude_ma": 3557.2757571935654,
+      "reward_trace": [
+        -1.8973202472427617
+      ]
+    },
+    "int8": {
+      "episodes": 1,
+      "mean_reward": -1.901941593239618,
+      "std_reward": 0.0,
+      "min_reward": -1.901941593239618,
+      "max_reward": -1.901941593239618,
+      "mean_steps": 10.0,
+      "mean_frequency_hz": 21.6796875,
+      "mean_amplitude_ma": 3554.6875,
+      "reward_trace": [
+        -1.901941593239618
+      ]
+    }
+  }
+}

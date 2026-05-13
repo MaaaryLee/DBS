@@ -1,0 +1,19 @@
+{
+  "port": "/dev/cu.usbmodem3C8427C3CECC2",
+  "baud": 115200,
+  "mode": "modern",
+  "runs_requested": 200,
+  "observation": null,
+  "bench_result": {
+    "runs": "200",
+    "model_io": "FP32",
+    "input_dim": "4",
+    "output_dim": "2",
+    "quant_avg_us": "1.16",
+    "invoke_avg_us": "69.60",
+    "dequant_avg_us": "0.88",
+    "total_avg_us": "71.65",
+    "min_invoke_us": "67",
+    "max_invoke_us": "309"
+  }
+}

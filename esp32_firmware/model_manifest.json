@@ -1,0 +1,28 @@
+{
+  "variant": "int8",
+  "model_path": "results/larger_models/400_300/model_int8_400_300.tflite",
+  "root_header": "model.h",
+  "firmware_header": "esp32_firmware/model.h",
+  "model_size_bytes": 127928,
+  "header_size_bytes": 789064,
+  "model_info": {
+    "input_shape": [
+      1,
+      6
+    ],
+    "input_dtype": "int8",
+    "input_quantization": [
+      0.01948394812643528,
+      58
+    ],
+    "output_shape": [
+      1,
+      2
+    ],
+    "output_dtype": "int8",
+    "output_quantization": [
+      0.0078125,
+      0
+    ]
+  }
+}

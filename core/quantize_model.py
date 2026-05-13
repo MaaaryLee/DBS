@@ -22,7 +22,7 @@ import numpy as np
 import torch
 from torch import nn
 import torch.quantization as tq
-from torch.ao.quantization import quantize_dynamic
+from torch.ao.quantization import fuse_modules, quantize_dynamic
 
 POLICY_ROOT = Path("models/policies")
 
@@ -87,6 +87,34 @@ class QuantizableTD3Actor(TD3Actor):
         x = self.backbone(x)
         x = self.dequant(x)
         return torch.tanh(x)
+
+
+def _select_quantized_engine() -> str:
+    supported = list(getattr(torch.backends.quantized, "supported_engines", []))
+    for candidate in ("fbgemm", "qnnpack"):
+        if candidate in supported:
+            torch.backends.quantized.engine = candidate
+            return candidate
+    raise RuntimeError(f"No supported quantized engine available: {supported}")
+
+
+def _dimension_specific_states_candidates(states_path: Path, obs_dim: int) -> Iterable[Path]:
+    stem = states_path.stem
+    suffix = states_path.suffix or ".npy"
+    dim_specific = states_path.with_name(f"{stem}_{obs_dim}d{suffix}")
+
+    candidates = [states_path]
+    if dim_specific not in candidates:
+        candidates.append(dim_specific)
+
+    for candidate in list(candidates):
+        asset_candidate = Path("assets") / candidate.name
+        if asset_candidate not in candidates:
+            candidates.append(asset_candidate)
+
+    return candidates
+
+
 def _load_policy_weights(zip_path: Path) -> Dict[str, torch.Tensor]:
     if not zip_path.exists():
         raise FileNotFoundError(f"Trained checkpoint missing: {zip_path}")
@@ -122,17 +150,61 @@ def _build_actor_from_state(state_dict: Dict[str, torch.Tensor]) -> TD3Actor:
 
 
 def _load_calibration_tensor(states_path: Path, obs_dim: int) -> torch.Tensor:
-    if states_path.exists():
-        states = np.load(states_path)
+    dim_specific_path = states_path.with_name(f"{states_path.stem}_{obs_dim}d{states_path.suffix or '.npy'}")
+
+    for candidate in _dimension_specific_states_candidates(states_path, obs_dim):
+        if not candidate.exists():
+            continue
+        states = np.load(candidate)
         if states.ndim != 2 or states.shape[1] != obs_dim:
-            raise ValueError(
-                f"Calibration data shape mismatch: expected (*, {obs_dim}), got {states.shape}"
-            )
+            continue
         return torch.from_numpy(states).to(torch.float32)
+
+    collected = _collect_real_calibration_states(obs_dim=obs_dim, num_states=1024)
+    if collected is not None:
+        dim_specific_path.parent.mkdir(parents=True, exist_ok=True)
+        np.save(dim_specific_path, collected.numpy())
+        return collected
 
     rng = np.random.default_rng(seed=0)
     synthetic = rng.normal(loc=0.0, scale=1.0, size=(1024, obs_dim)).astype(np.float32)
+    dim_specific_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(dim_specific_path, synthetic)
     return torch.from_numpy(synthetic)
+
+
+def _collect_real_calibration_states(obs_dim: int, num_states: int) -> Optional[torch.Tensor]:
+    """
+    Prefer realistic cached DBS observations for calibration whenever the actor expects
+    the 6D observation used by the offline training path.
+    """
+
+    if obs_dim != 6:
+        return None
+
+    try:
+        try:
+            from core.BGN_MC_Online import BGN_MC_Online
+        except Exception:
+            from BGN_MC_Online import BGN_MC_Online
+
+        env = BGN_MC_Online(tmax=1100, pd=True, use_matlab_online=False)
+        states = []
+        obs, _ = env.reset(seed=0)
+        states.append(np.asarray(obs, dtype=np.float32))
+
+        while len(states) < num_states:
+            action = env.action_space.sample()
+            obs, _, terminated, truncated, _ = env.step(action)
+            states.append(np.asarray(obs, dtype=np.float32))
+            if terminated or truncated:
+                obs, _ = env.reset()
+                states.append(np.asarray(obs, dtype=np.float32))
+
+        arr = np.stack(states[:num_states], axis=0).astype(np.float32)
+        return torch.from_numpy(arr)
+    except Exception:
+        return None
 
 
 def _benchmark_module(module: nn.Module, sample: torch.Tensor, runs: int = 200) -> Dict[str, float]:
@@ -215,20 +287,25 @@ def _export_module(module: nn.Module, path: Path) -> Tuple[Path, str]:
 
 
 def _quantize_dynamic(actor: TD3Actor) -> nn.Module:
+    _select_quantized_engine()
     return quantize_dynamic(actor, {nn.Linear}, dtype=torch.qint8)
 
 
 def _quantize_static(actor: TD3Actor, calibration: torch.Tensor) -> nn.Module:
-    if torch.backends.quantized.engine != "fbgemm":
-        torch.backends.quantized.engine = "fbgemm"
+    engine = _select_quantized_engine()
 
     quant_actor = QuantizableTD3Actor(
         obs_dim=actor.obs_dim, hidden_dims=actor.hidden_dims, action_dim=actor.action_dim
     )
     quant_actor.backbone.load_state_dict(actor.backbone.state_dict())
     quant_actor.eval()
+    fuse_modules(
+        quant_actor,
+        [["backbone.0", "backbone.1"], ["backbone.2", "backbone.3"]],
+        inplace=True,
+    )
 
-    quant_actor.qconfig = tq.get_default_qconfig(torch.backends.quantized.engine)
+    quant_actor.qconfig = tq.get_default_qconfig(engine)
     tq.prepare(quant_actor, inplace=True)
 
     with torch.inference_mode():
@@ -339,4 +416,3 @@ if __name__ == "__main__":
                 f"p90={core['p90']:.4f}"
             )
     print("=" * 70)
-

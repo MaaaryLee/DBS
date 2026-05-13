@@ -1,0 +1,13 @@
+{
+  "model": "/Users/maaary/Downloads/DBS-main/results/larger_models/48_32/model_fp32_48_32.tflite",
+  "runs": 500,
+  "warmup": 10,
+  "threads": 1,
+  "inner_repeats": 50,
+  "default_delegates_enabled": true,
+  "mean_ms": 0.0012947049999999826,
+  "p50_ms": 0.0012050000000041194,
+  "p90_ms": 0.0013316740000055562,
+  "min_ms": 0.0011758399999983737,
+  "max_ms": 0.00725667999999402
+}

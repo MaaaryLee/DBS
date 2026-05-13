@@ -1,0 +1,144 @@
+{
+  "generated_at": "2026-04-27T12:34:59",
+  "source": "/Users/maaary/Downloads/DBS-main/scripts/cache_blocking_benchmark.cpp",
+  "stdout": "CONFIG preset=400x300 row_tile=32 col_tile=32 warmup=100 repeats=2000 seed=7 flush_bytes=262144\nRESULT layer=fc1 input_dim=6 output_dim=400 macs=2400 kernel=naive avg_ns=2081.878 ns_per_mac=0.867449 gmac_per_s=1.152805 checksum=15.731919 max_abs_diff=0.000000\nRESULT layer=fc1 input_dim=6 output_dim=400 macs=2400 kernel=blocked_row_major avg_ns=1781.144 ns_per_mac=0.742143 gmac_per_s=1.347449 checksum=15.731919 max_abs_diff=0.000000\nRESULT layer=fc1 input_dim=6 output_dim=400 macs=2400 kernel=blocked_packed avg_ns=1559.020 ns_per_mac=0.649592 gmac_per_s=1.539429 checksum=15.731923 max_abs_diff=0.000000\nRESULT layer=fc2 input_dim=400 output_dim=300 macs=120000 kernel=naive avg_ns=91910.724 ns_per_mac=0.765923 gmac_per_s=1.305615 checksum=-1591.265401 max_abs_diff=0.000000\nRESULT layer=fc2 input_dim=400 output_dim=300 macs=120000 kernel=blocked_row_major avg_ns=38812.406 ns_per_mac=0.323437 gmac_per_s=3.091795 checksum=-1591.265401 max_abs_diff=0.000000\nRESULT layer=fc2 input_dim=400 output_dim=300 macs=120000 kernel=blocked_packed avg_ns=31329.098 ns_per_mac=0.261076 gmac_per_s=3.830305 checksum=-1591.265401 max_abs_diff=0.000000\nRESULT layer=fc3 input_dim=300 output_dim=2 macs=600 kernel=naive avg_ns=644.707 ns_per_mac=1.074511 gmac_per_s=0.930656 checksum=2675.833941 max_abs_diff=0.000000\nRESULT layer=fc3 input_dim=300 output_dim=2 macs=600 kernel=blocked_row_major avg_ns=571.308 ns_per_mac=0.952179 gmac_per_s=1.050223 checksum=2675.833941 max_abs_diff=0.000000\nRESULT layer=fc3 input_dim=300 output_dim=2 macs=600 kernel=blocked_packed avg_ns=367.524 ns_per_mac=0.612540 gmac_per_s=1.632546 checksum=2675.833762 max_abs_diff=0.000000\nTOTAL kernel=naive total_avg_ns=94637.310 total_ns_per_mac=0.769409 total_gmac_per_s=1.299699\nTOTAL kernel=blocked_row_major total_avg_ns=41164.858 total_ns_per_mac=0.334674 total_gmac_per_s=2.987986\nTOTAL kernel=blocked_packed total_avg_ns=33255.642 total_ns_per_mac=0.270371 total_gmac_per_s=3.698621\n",
+  "config": {
+    "preset": "400x300",
+    "row_tile": "32",
+    "col_tile": "32",
+    "warmup": "100",
+    "repeats": "2000",
+    "seed": "7",
+    "flush_bytes": "262144"
+  },
+  "results": [
+    {
+      "layer": "fc1",
+      "input_dim": 6,
+      "output_dim": 400,
+      "macs": 2400,
+      "kernel": "naive",
+      "avg_ns": 2081.878,
+      "ns_per_mac": 0.867449,
+      "gmac_per_s": 1.152805,
+      "checksum": 15.731919,
+      "max_abs_diff": 0.0
+    },
+    {
+      "layer": "fc1",
+      "input_dim": 6,
+      "output_dim": 400,
+      "macs": 2400,
+      "kernel": "blocked_row_major",
+      "avg_ns": 1781.144,
+      "ns_per_mac": 0.742143,
+      "gmac_per_s": 1.347449,
+      "checksum": 15.731919,
+      "max_abs_diff": 0.0
+    },
+    {
+      "layer": "fc1",
+      "input_dim": 6,
+      "output_dim": 400,
+      "macs": 2400,
+      "kernel": "blocked_packed",
+      "avg_ns": 1559.02,
+      "ns_per_mac": 0.649592,
+      "gmac_per_s": 1.539429,
+      "checksum": 15.731923,
+      "max_abs_diff": 0.0
+    },
+    {
+      "layer": "fc2",
+      "input_dim": 400,
+      "output_dim": 300,
+      "macs": 120000,
+      "kernel": "naive",
+      "avg_ns": 91910.724,
+      "ns_per_mac": 0.765923,
+      "gmac_per_s": 1.305615,
+      "checksum": -1591.265401,
+      "max_abs_diff": 0.0
+    },
+    {
+      "layer": "fc2",
+      "input_dim": 400,
+      "output_dim": 300,
+      "macs": 120000,
+      "kernel": "blocked_row_major",
+      "avg_ns": 38812.406,
+      "ns_per_mac": 0.323437,
+      "gmac_per_s": 3.091795,
+      "checksum": -1591.265401,
+      "max_abs_diff": 0.0
+    },
+    {
+      "layer": "fc2",
+      "input_dim": 400,
+      "output_dim": 300,
+      "macs": 120000,
+      "kernel": "blocked_packed",
+      "avg_ns": 31329.098,
+      "ns_per_mac": 0.261076,
+      "gmac_per_s": 3.830305,
+      "checksum": -1591.265401,
+      "max_abs_diff": 0.0
+    },
+    {
+      "layer": "fc3",
+      "input_dim": 300,
+      "output_dim": 2,
+      "macs": 600,
+      "kernel": "naive",
+      "avg_ns": 644.707,
+      "ns_per_mac": 1.074511,
+      "gmac_per_s": 0.930656,
+      "checksum": 2675.833941,
+      "max_abs_diff": 0.0
+    },
+    {
+      "layer": "fc3",
+      "input_dim": 300,
+      "output_dim": 2,
+      "macs": 600,
+      "kernel": "blocked_row_major",
+      "avg_ns": 571.308,
+      "ns_per_mac": 0.952179,
+      "gmac_per_s": 1.050223,
+      "checksum": 2675.833941,
+      "max_abs_diff": 0.0
+    },
+    {
+      "layer": "fc3",
+      "input_dim": 300,
+      "output_dim": 2,
+      "macs": 600,
+      "kernel": "blocked_packed",
+      "avg_ns": 367.524,
+      "ns_per_mac": 0.61254,
+      "gmac_per_s": 1.632546,
+      "checksum": 2675.833762,
+      "max_abs_diff": 0.0
+    }
+  ],
+  "totals": [
+    {
+      "kernel": "naive",
+      "total_avg_ns": 94637.31,
+      "total_ns_per_mac": 0.769409,
+      "total_gmac_per_s": 1.299699
+    },
+    {
+      "kernel": "blocked_row_major",
+      "total_avg_ns": 41164.858,
+      "total_ns_per_mac": 0.334674,
+      "total_gmac_per_s": 2.987986
+    },
+    {
+      "kernel": "blocked_packed",
+      "total_avg_ns": 33255.642,
+      "total_ns_per_mac": 0.270371,
+      "total_gmac_per_s": 3.698621
+    }
+  ]
+}

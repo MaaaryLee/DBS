@@ -1,0 +1,98 @@
+{
+  "label": "arduino_fp32_400_300_retry_20260427",
+  "mode": "modern",
+  "runs_requested": 200,
+  "repeats": 3,
+  "port": "/dev/cu.usbmodem3C8427C3CECC2",
+  "aggregate": {
+    "quant_avg_us": {
+      "mean": 1.72,
+      "std": 0.043204937989385774,
+      "min": 1.68,
+      "max": 1.78
+    },
+    "invoke_avg_us": {
+      "mean": 19320.836666666666,
+      "std": 0.17745108872240808,
+      "min": 19320.59,
+      "max": 19321.0
+    },
+    "dequant_avg_us": {
+      "mean": 1.2566666666666666,
+      "std": 0.020548046676563275,
+      "min": 1.23,
+      "max": 1.28
+    },
+    "total_avg_us": {
+      "mean": 19323.813333333335,
+      "std": 0.1586050300454942,
+      "min": 19323.6,
+      "max": 19323.98
+    },
+    "min_invoke_us": {
+      "mean": 19316.0,
+      "std": 0.816496580927726,
+      "min": 19315.0,
+      "max": 19317.0
+    },
+    "max_invoke_us": {
+      "mean": 19438.666666666668,
+      "std": 9.46337971105226,
+      "min": 19431.0,
+      "max": 19452.0
+    }
+  },
+  "raw_runs": [
+    {
+      "run_index": 1,
+      "json_path": "results/esp32/repeats/arduino_fp32_400_300_retry_20260427_run01.json",
+      "log_path": "results/esp32/repeats/arduino_fp32_400_300_retry_20260427_run01.log",
+      "bench_result": {
+        "runs": 200,
+        "model_io": "FP32",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 1.78,
+        "invoke_avg_us": 19320.59,
+        "dequant_avg_us": 1.23,
+        "total_avg_us": 19323.6,
+        "min_invoke_us": 19315,
+        "max_invoke_us": 19452
+      }
+    },
+    {
+      "run_index": 2,
+      "json_path": "results/esp32/repeats/arduino_fp32_400_300_retry_20260427_run02.json",
+      "log_path": "results/esp32/repeats/arduino_fp32_400_300_retry_20260427_run02.log",
+      "bench_result": {
+        "runs": 200,
+        "model_io": "FP32",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 1.68,
+        "invoke_avg_us": 19320.92,
+        "dequant_avg_us": 1.26,
+        "total_avg_us": 19323.86,
+        "min_invoke_us": 19317,
+        "max_invoke_us": 19433
+      }
+    },
+    {
+      "run_index": 3,
+      "json_path": "results/esp32/repeats/arduino_fp32_400_300_retry_20260427_run03.json",
+      "log_path": "results/esp32/repeats/arduino_fp32_400_300_retry_20260427_run03.log",
+      "bench_result": {
+        "runs": 200,
+        "model_io": "FP32",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 1.7,
+        "invoke_avg_us": 19321.0,
+        "dequant_avg_us": 1.28,
+        "total_avg_us": 19323.98,
+        "min_invoke_us": 19316,
+        "max_invoke_us": 19431
+      }
+    }
+  ]
+}

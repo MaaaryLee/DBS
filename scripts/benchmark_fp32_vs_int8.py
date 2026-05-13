@@ -16,7 +16,9 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -111,6 +113,13 @@ def _torch_threads(threads: int) -> None:
         pass
 
 
+def _torch_load_module(path: Path):
+    try:
+        return torch.load(path, map_location="cpu", weights_only=False)
+    except TypeError:
+        return torch.load(path, map_location="cpu")
+
+
 def _pytorch_bench(
     *,
     h1: int,
@@ -138,10 +147,10 @@ def _pytorch_bench(
 
     sample_fp32 = _load_states(states_path, batch_size=batch_size)
 
-    fp32 = torch.load(fp32_path, map_location="cpu")
+    fp32 = _torch_load_module(fp32_path)
     fp32.eval()
 
-    int8 = torch.load(int8_path, map_location="cpu")
+    int8 = _torch_load_module(int8_path)
     int8.eval()
 
     rows: List[BenchRow] = []
@@ -240,64 +249,40 @@ def _tflite_bench(
     warmup: int,
     batch_size: int,
     threads: int,
+    inner_repeats: int,
     dtype: str,
+    disable_default_delegates: bool,
 ) -> BenchRow:
-    try:
-        import tensorflow as tf  # type: ignore
-    except Exception as exc:  # pragma: no cover
-        raise SystemExit("TensorFlow is required for TFLite benchmarking.") from exc
-
-    import os
-
     if not model_path.exists():
         raise SystemExit(f"missing {model_path}")
-    if not states_path.exists():
-        raise SystemExit(f"missing {states_path}")
 
-    disable_default_delegates = os.environ.get("TFLITE_DISABLE_DEFAULT_DELEGATES", "1") == "1"
-    interpreter_kwargs = {"model_path": str(model_path), "num_threads": int(threads)}
+    script_name = "measure_tflite_int8_latency.py" if dtype == "int8" else "measure_tflite_fp32_latency.py"
+    with tempfile.NamedTemporaryFile(prefix="tflite_bench_", suffix=".json", delete=False) as handle:
+        output_path = Path(handle.name)
+
+    command = [
+        sys.executable,
+        str(ROOT / "scripts" / script_name),
+        "--model-path",
+        str(model_path),
+        "--states-path",
+        str(states_path),
+        "--runs",
+        str(int(runs)),
+        "--warmup",
+        str(int(warmup)),
+        "--threads",
+        str(int(threads)),
+        "--inner-repeats",
+        str(int(inner_repeats)),
+        "--output-path",
+        str(output_path),
+    ]
     if disable_default_delegates:
-        try:
-            interpreter_kwargs["experimental_op_resolver_type"] = (
-                tf.lite.experimental.OpResolverType.BUILTIN_WITHOUT_DEFAULT_DELEGATES
-            )
-        except Exception:
-            pass
-    try:
-        interpreter = tf.lite.Interpreter(**interpreter_kwargs)
-    except TypeError:
-        interpreter_kwargs.pop("experimental_op_resolver_type", None)
-        interpreter = tf.lite.Interpreter(**interpreter_kwargs)
-    interpreter.allocate_tensors()
-    input_details = interpreter.get_input_details()
-    input_index = input_details[0]["index"]
-    locked_shape = [int(batch_size)] + list(input_details[0]["shape"][1:])
+        command.append("--disable-default-delegates")
 
-    # Only resize if needed (avoids issues with delegates requiring static tensors).
-    if list(input_details[0]["shape"]) != locked_shape:
-        interpreter.resize_tensor_input(input_index, locked_shape)
-        interpreter.allocate_tensors()
-        input_details = interpreter.get_input_details()
-
-    states = np.load(states_path).astype("float32")
-    if states.shape[0] < int(batch_size):
-        raise SystemExit(f"states file has only {states.shape[0]} rows, need batch_size={batch_size}")
-    sample = states[: int(batch_size)].reshape(locked_shape)
-
-    notes = ""
-    if dtype == "int8":
-        input_scale, input_zero_point = input_details[0]["quantization"]
-        if input_scale == 0:
-            raise SystemExit("input scale is zero; quantization info missing in TFLite model")
-        sample = np.round(sample / input_scale + input_zero_point).astype(np.int8)
-        notes = "input pre-quantized using model input quantization params"
-
-    def invoke():
-        interpreter.set_tensor(input_index, sample)
-        interpreter.invoke()
-
-    times = _time_callable(invoke, runs=runs, warmup=warmup)
-    stats = _summarize(times)
+    subprocess.run(command, check=True, cwd=str(ROOT), stdout=subprocess.DEVNULL)
+    stats = json.loads(output_path.read_text())
 
     return BenchRow(
         backend="tflite",
@@ -311,8 +296,13 @@ def _tflite_bench(
         warmup=warmup,
         model_path=str(model_path),
         model_size_kb=float(model_path.stat().st_size / 1024.0),
-        notes=notes,
-        **stats,
+        notes="default delegates enabled" if not disable_default_delegates else "default delegates disabled",
+        mean_ms=float(stats["mean_ms"]),
+        std_ms=0.0,
+        p50_ms=float(stats["p50_ms"]),
+        p90_ms=float(stats["p90_ms"]),
+        min_ms=float(stats["min_ms"]),
+        max_ms=float(stats["max_ms"]),
     )
 
 
@@ -363,10 +353,17 @@ def main() -> int:
     parser.add_argument("--warmup", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--threads", type=int, default=1)
+    parser.add_argument("--inner-repeats", type=int, default=50)
     parser.add_argument("--variant", choices=["static_int8", "dynamic_int8"], default="static_int8")
     parser.add_argument("--include-tflite", action="store_true", help="Also benchmark TFLite FP32/INT8 models")
+    parser.add_argument("--tflite-only", action="store_true", help="Skip PyTorch and benchmark only the TFLite path.")
     parser.add_argument("--tflite-fp32-path", type=str, default="tflite_actors/model_fp32.tflite")
     parser.add_argument("--tflite-int8-path", type=str, default="tflite_actors/model_int8.tflite")
+    parser.add_argument(
+        "--tflite-disable-default-delegates",
+        action="store_true",
+        help="Disable default TFLite delegates such as XNNPACK during TFLite benchmarking.",
+    )
     parser.add_argument("--output-dir", type=str, default="results/benchmark_latest")
     args = parser.parse_args()
 
@@ -376,19 +373,23 @@ def main() -> int:
     states_path = Path(args.states_path)
     rows: List[BenchRow] = []
 
+    if args.tflite_only:
+        args.include_tflite = True
+
     # PyTorch
-    rows.extend(
-        _pytorch_bench(
-            h1=args.h1,
-            h2=args.h2,
-            states_path=states_path,
-            runs=int(args.runs),
-            warmup=int(args.warmup),
-            batch_size=int(args.batch_size),
-            threads=int(args.threads),
-            variant=args.variant,
+    if not args.tflite_only:
+        rows.extend(
+            _pytorch_bench(
+                h1=args.h1,
+                h2=args.h2,
+                states_path=states_path,
+                runs=int(args.runs),
+                warmup=int(args.warmup),
+                batch_size=int(args.batch_size),
+                threads=int(args.threads),
+                variant=args.variant,
+            )
         )
-    )
 
     # Optional: TFLite
     if args.include_tflite:
@@ -400,7 +401,9 @@ def main() -> int:
                 warmup=int(args.warmup),
                 batch_size=int(args.batch_size),
                 threads=int(args.threads),
+                inner_repeats=int(args.inner_repeats),
                 dtype="fp32",
+                disable_default_delegates=bool(args.tflite_disable_default_delegates),
             )
         )
         rows.append(
@@ -411,7 +414,9 @@ def main() -> int:
                 warmup=int(args.warmup),
                 batch_size=int(args.batch_size),
                 threads=int(args.threads),
+                inner_repeats=int(args.inner_repeats),
                 dtype="int8",
+                disable_default_delegates=bool(args.tflite_disable_default_delegates),
             )
         )
 
@@ -447,5 +452,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-

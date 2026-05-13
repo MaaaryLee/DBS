@@ -1,0 +1,107 @@
+{
+  "label": "native_int8_400_300",
+  "mode": "legacy",
+  "runs_requested": 200,
+  "repeats": 3,
+  "port": "/dev/cu.usbmodem101",
+  "aggregate": {
+    "quant_avg_us": {
+      "mean": 6.7,
+      "std": 0.02160246899469309,
+      "min": 6.68,
+      "max": 6.73
+    },
+    "invoke_avg_us": {
+      "mean": 10505.61,
+      "std": 0.021602468994322374,
+      "min": 10505.59,
+      "max": 10505.64
+    },
+    "dequant_avg_us": {
+      "mean": 1.25,
+      "std": 0.014142135623730963,
+      "min": 1.24,
+      "max": 1.27
+    },
+    "total_avg_us": {
+      "mean": 10513.563333333334,
+      "std": 0.028674417556729812,
+      "min": 10513.53,
+      "max": 10513.6
+    },
+    "min_invoke_us": {
+      "mean": 10504.0,
+      "std": 0.0,
+      "min": 10504.0,
+      "max": 10504.0
+    },
+    "max_invoke_us": {
+      "mean": 10514.0,
+      "std": 0.0,
+      "min": 10514.0,
+      "max": 10514.0
+    }
+  },
+  "raw_runs": [
+    {
+      "run_index": 1,
+      "json_path": "results/esp32/repeats/native_int8_400_300_run01.json",
+      "log_path": "results/esp32/repeats/native_int8_400_300_run01.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "INT8",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 6.68,
+        "invoke_avg_us": 10505.64,
+        "dequant_avg_us": 1.27,
+        "total_avg_us": 10513.6,
+        "min_invoke_us": 10504,
+        "max_invoke_us": 10514
+      }
+    },
+    {
+      "run_index": 2,
+      "json_path": "results/esp32/repeats/native_int8_400_300_run02.json",
+      "log_path": "results/esp32/repeats/native_int8_400_300_run02.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "INT8",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 6.69,
+        "invoke_avg_us": 10505.6,
+        "dequant_avg_us": 1.24,
+        "total_avg_us": 10513.53,
+        "min_invoke_us": 10504,
+        "max_invoke_us": 10514
+      }
+    },
+    {
+      "run_index": 3,
+      "json_path": "results/esp32/repeats/native_int8_400_300_run03.json",
+      "log_path": "results/esp32/repeats/native_int8_400_300_run03.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "INT8",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 6.73,
+        "invoke_avg_us": 10505.59,
+        "dequant_avg_us": 1.24,
+        "total_avg_us": 10513.56,
+        "min_invoke_us": 10504,
+        "max_invoke_us": 10514
+      }
+    }
+  ]
+}

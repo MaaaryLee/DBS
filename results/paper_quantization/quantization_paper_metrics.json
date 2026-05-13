@@ -1,0 +1,480 @@
+{
+  "generated_at_utc": "2026-04-13T04:13:29.463298+00:00",
+  "project_root": "/Users/maaary/Downloads/DBS-main",
+  "hardware_runtime": {
+    "board": "Arduino Nano ESP32",
+    "chip": "ESP32-S3",
+    "chip_trace_path": "/Users/maaary/Downloads/DBS-main/espidf_firmware/dbs_espnn_benchmark/build/log/idf_py_stdout_output_67877",
+    "espidf_project": "/Users/maaary/Downloads/DBS-main/espidf_firmware/dbs_espnn_benchmark",
+    "current_sdkconfig_path": "/Users/maaary/Downloads/DBS-main/espidf_firmware/dbs_espnn_benchmark/sdkconfig",
+    "source_urls": {
+      "arduino_nano_esp32": "https://docs.arduino.cc/hardware/nano-esp32",
+      "esp_tflite_micro": "https://github.com/espressif/esp-tflite-micro",
+      "esp_nn": "https://github.com/espressif/esp-nn",
+      "tensorflow_integer_quantization": "https://www.tensorflow.org/lite/performance/post_training_integer_quant"
+    }
+  },
+  "candidate_model": {
+    "model_size": "96_96",
+    "hidden_layers": [
+      96,
+      96
+    ],
+    "params": 10178,
+    "macs": 9984,
+    "fp32_parameter_bytes": 40712,
+    "int8_parameter_bytes": 10178,
+    "desktop_tflite_repaired": {
+      "fp32_mean_ms": 0.0016415997200000198,
+      "int8_mean_ms": 0.0013336099599998085,
+      "int8_speedup_vs_fp32": 1.2309444059642862,
+      "fp32_trace": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/bench_fp32_96_96_repaired.json",
+      "int8_trace": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/bench_int8_96_96_repaired.json"
+    },
+    "esp32_native_default_cache_32kb": {
+      "fp32_invoke_mean_us": 1685.7759999999998,
+      "fp32_invoke_std_us": 0.0427083130080864,
+      "int8_invoke_mean_us": 435.796,
+      "int8_invoke_std_us": 0.004898979485561901,
+      "int8_speedup_vs_fp32": 3.8682686394551578,
+      "fp32_trace": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_fp32_96_96_summary.json",
+      "int8_trace": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_96_96_repaired_32k_summary.json"
+    },
+    "esp32_cache_ablation": {
+      "data_cache_32kb": {
+        "fp32_invoke_mean_us": 1685.7759999999998,
+        "int8_invoke_mean_us": 435.796
+      },
+      "data_cache_64kb": {
+        "fp32_invoke_mean_us": 375.79,
+        "int8_invoke_mean_us": 435.8333333333333
+      },
+      "interpretation": "At 96x96, INT8 is faster than FP32 with the project's default 32 KB data cache, but FP32 becomes faster again when the data cache is increased to 64 KB.",
+      "trace_paths": {
+        "fp32_32kb": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_fp32_96_96_summary.json",
+        "int8_32kb_repaired": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_96_96_repaired_32k_summary.json",
+        "fp32_64kb": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_fp32_96_96_dc64k_summary.json",
+        "int8_64kb": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_96_96_dc64k_summary.json"
+      }
+    },
+    "quantization_fidelity_repaired": {
+      "trace": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/eval_tflite_96_96_repaired.json",
+      "model_size_bytes": {
+        "fp32": 42440,
+        "int8": 12880,
+        "reduction_percent": 69.65127238454288
+      },
+      "fp32_io": {
+        "input": {
+          "shape": [
+            1,
+            6
+          ],
+          "dtype": "<class 'numpy.float32'>",
+          "quantization": [
+            0.0,
+            0
+          ]
+        },
+        "output": {
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "<class 'numpy.float32'>",
+          "quantization": [
+            0.0,
+            0
+          ]
+        }
+      },
+      "int8_io": {
+        "input": {
+          "shape": [
+            1,
+            6
+          ],
+          "dtype": "<class 'numpy.int8'>",
+          "quantization": [
+            0.01948394812643528,
+            58
+          ]
+        },
+        "output": {
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "<class 'numpy.int8'>",
+          "quantization": [
+            0.0078125,
+            0
+          ]
+        }
+      },
+      "input_saturation": {
+        "sat_min_count": 0,
+        "sat_max_count": 0,
+        "sat_total_count": 0,
+        "sat_total_fraction": 0.0
+      },
+      "state_coverage": {
+        "unique_rows": 987,
+        "per_dim_std": [
+          0.05489477142691612,
+          0.023857496678829193,
+          0.03317311406135559,
+          0.005721105728298426,
+          1.1340482234954834,
+          0.5991162061691284
+        ],
+        "per_dim_min": [
+          -0.23135511577129364,
+          -0.09411834925413132,
+          0.09725099802017212,
+          0.012967707589268684,
+          -3.6252102851867676,
+          -0.29572775959968567
+        ],
+        "per_dim_max": [
+          0.016493039205670357,
+          0.01978430338203907,
+          0.2356458306312561,
+          0.04578589275479317,
+          -1.0140098333358765,
+          1.3431962728500366
+        ],
+        "degenerate": false
+      },
+      "output_coverage": {
+        "fp32": {
+          "mean": [
+            -0.7824239730834961,
+            -0.6878851056098938
+          ],
+          "std": [
+            0.17304421961307526,
+            0.15861819684505463
+          ],
+          "min": [
+            -0.9379624724388123,
+            -0.8332184553146362
+          ],
+          "max": [
+            -0.516462504863739,
+            -0.46109628677368164
+          ]
+        },
+        "int8": {
+          "mean": [
+            -0.7824921607971191,
+            -0.6858906149864197
+          ],
+          "std": [
+            0.17277228832244873,
+            0.1564762145280838
+          ],
+          "min": [
+            -0.9375,
+            -0.8359375
+          ],
+          "max": [
+            -0.515625,
+            -0.4609375
+          ]
+        }
+      },
+      "fidelity": {
+        "mse": 9.210164535033982e-06,
+        "mae": 0.002338831312954426,
+        "max_abs_diff": 0.008183836936950684,
+        "p50_abs_diff": 0.0021747350692749023,
+        "p90_abs_diff": 0.0046808689832687385,
+        "per_output": [
+          {
+            "index": 0,
+            "mae": 0.0012717326171696186,
+            "max_abs_diff": 0.008183836936950684,
+            "pearson_r": 0.9999271427628249
+          },
+          {
+            "index": 1,
+            "mae": 0.003405930008739233,
+            "max_abs_diff": 0.008159160614013672,
+            "pearson_r": 0.9998908589514165
+          }
+        ]
+      },
+      "env_eval": {
+        "fp32": {
+          "episodes": 5,
+          "mean_reward": -1.3665294724205264,
+          "std_reward": 0.0,
+          "min_reward": -1.3665294724205264,
+          "max_reward": -1.3665294724205264,
+          "mean_steps": 10.0,
+          "mean_frequency_hz": 5.75095921754837,
+          "mean_amplitude_ma": 417.01287031173706,
+          "reward_trace": [
+            -1.3665294724205264,
+            -1.3665294724205264,
+            -1.3665294724205264,
+            -1.3665294724205264,
+            -1.3665294724205264
+          ]
+        },
+        "int8": {
+          "episodes": 5,
+          "mean_reward": -1.3681915932396185,
+          "std_reward": 0.0,
+          "min_reward": -1.3681915932396185,
+          "max_reward": -1.3681915932396185,
+          "mean_steps": 10.0,
+          "mean_frequency_hz": 5.78125,
+          "mean_amplitude_ma": 429.6875,
+          "reward_trace": [
+            -1.3681915932396185,
+            -1.3681915932396185,
+            -1.3681915932396185,
+            -1.3681915932396185,
+            -1.3681915932396185
+          ]
+        }
+      },
+      "warnings": [
+        "Cached-environment reward traces are deterministic in this setup; treat env_eval as a functional smoke test, not a stochastic control benchmark."
+      ]
+    },
+    "calibration_state_sets": {
+      "original_degenerate": {
+        "path": "/Users/maaary/Downloads/DBS-main/states_eval_6d.npy",
+        "shape": [
+          1000,
+          6
+        ],
+        "unique_rows": 1,
+        "per_dim_std": [
+          9.313225746154785e-08,
+          1.331785455249701e-07,
+          6.705522537231445e-07,
+          2.644956111907959e-07,
+          2.09808349609375e-05,
+          1.1920928955078125e-07
+        ],
+        "per_dim_min": [
+          -0.02937365137040615,
+          -0.010962267406284809,
+          0.11720501631498337,
+          0.030502988025546074,
+          -3.6252102851867676,
+          -0.29572775959968567
+        ],
+        "per_dim_max": [
+          -0.02937365137040615,
+          -0.010962267406284809,
+          0.11720501631498337,
+          0.030502988025546074,
+          -3.6252102851867676,
+          -0.29572775959968567
+        ]
+      },
+      "repaired_windowed": {
+        "path": "/Users/maaary/Downloads/DBS-main/states_eval_6d_repaired.npy",
+        "shape": [
+          1000,
+          6
+        ],
+        "unique_rows": 987,
+        "per_dim_std": [
+          0.05489477142691612,
+          0.023857496678829193,
+          0.03317311406135559,
+          0.005721105728298426,
+          1.1340482234954834,
+          0.5991162061691284
+        ],
+        "per_dim_min": [
+          -0.23135511577129364,
+          -0.09411834925413132,
+          0.09725099802017212,
+          0.012967707589268684,
+          -3.6252102851867676,
+          -0.29572775959968567
+        ],
+        "per_dim_max": [
+          0.016493039205670357,
+          0.01978430338203907,
+          0.2356458306312561,
+          0.04578589275479317,
+          -1.0140098333358765,
+          1.3431962728500366
+        ]
+      }
+    }
+  },
+  "screening_latency_study": {
+    "scope": "6D MLP latency screening under the default 32 KB ESP32-S3 data-cache configuration",
+    "models": [
+      {
+        "model_size": "80_80",
+        "hidden_layers": [
+          80,
+          80
+        ],
+        "params": 7202,
+        "macs": 7040,
+        "fp32_parameter_bytes": 28808,
+        "int8_parameter_bytes": 7202,
+        "desktop_tflite_mean_ms": {
+          "fp32": 0.0015347062800002043,
+          "int8": 0.001260614440000083,
+          "int8_speedup_vs_fp32": 1.2174271778134662
+        },
+        "esp32_default_cache_32kb_invoke_us": {
+          "fp32_mean": 281.908,
+          "fp32_std": 0.01469693845671355,
+          "int8_mean": 333.68600000000004,
+          "int8_std": 0.007999999999992725,
+          "int8_speedup_vs_fp32": 0.844830169680478
+        },
+        "trace_paths": {
+          "desktop_fp32": "/Users/maaary/Downloads/DBS-main/results/larger_models/80_80/bench_fp32_80_80.json",
+          "desktop_int8": "/Users/maaary/Downloads/DBS-main/results/larger_models/80_80/bench_int8_80_80_repaired.json",
+          "esp32_fp32": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_fp32_80_80_summary.json",
+          "esp32_int8": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_80_80_repaired_32k_summary.json"
+        }
+      },
+      {
+        "model_size": "96_96",
+        "hidden_layers": [
+          96,
+          96
+        ],
+        "params": 10178,
+        "macs": 9984,
+        "fp32_parameter_bytes": 40712,
+        "int8_parameter_bytes": 10178,
+        "desktop_tflite_mean_ms": {
+          "fp32": 0.0016349531600000056,
+          "int8": 0.0013336099599998085,
+          "int8_speedup_vs_fp32": 1.225960519971102
+        },
+        "esp32_default_cache_32kb_invoke_us": {
+          "fp32_mean": 1685.7759999999998,
+          "fp32_std": 0.0427083130080864,
+          "int8_mean": 435.796,
+          "int8_std": 0.004898979485561901,
+          "int8_speedup_vs_fp32": 3.8682686394551578
+        },
+        "trace_paths": {
+          "desktop_fp32": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/bench_fp32_96_96.json",
+          "desktop_int8": "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/bench_int8_96_96_repaired.json",
+          "esp32_fp32": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_fp32_96_96_summary.json",
+          "esp32_int8": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_96_96_repaired_32k_summary.json"
+        }
+      },
+      {
+        "model_size": "128_128",
+        "hidden_layers": [
+          128,
+          128
+        ],
+        "params": 17666,
+        "macs": 17408,
+        "fp32_parameter_bytes": 70664,
+        "int8_parameter_bytes": 17666,
+        "desktop_tflite_mean_ms": {
+          "fp32": 0.002107888400000082,
+          "int8": 0.0014808165999998125,
+          "int8_speedup_vs_fp32": 1.4234635133076905
+        },
+        "esp32_default_cache_32kb_invoke_us": {
+          "fp32_mean": 2885.166,
+          "fp32_std": 0.007999999999992723,
+          "int8_mean": 680.562,
+          "int8_std": 0.02227105745135496,
+          "int8_speedup_vs_fp32": 4.239387447433151
+        },
+        "trace_paths": {
+          "desktop_fp32": "/Users/maaary/Downloads/DBS-main/results/larger_models/128_128/bench_fp32_128_128.json",
+          "desktop_int8": "/Users/maaary/Downloads/DBS-main/results/larger_models/128_128/bench_int8_128_128_repaired.json",
+          "esp32_fp32": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_fp32_128_128_summary.json",
+          "esp32_int8": "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_128_128_repaired_32k_summary.json"
+        }
+      }
+    ],
+    "first_tested_int8_winner_under_default_cache": "96_96"
+  },
+  "not_right": [
+    {
+      "status": "fixed for the candidate 96x96 rerun",
+      "severity": "high",
+      "issue": "The original 6D representative dataset collapsed to one repeated state.",
+      "evidence": [
+        "/Users/maaary/Downloads/DBS-main/states_eval_6d.npy",
+        "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/eval_tflite_96_96.json",
+        "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/eval_tflite_96_96_repaired.json"
+      ],
+      "impact": "It invalidated the original 6D fidelity/correlation analysis and likely distorted INT8 calibration ranges."
+    },
+    {
+      "status": "open limitation",
+      "severity": "high",
+      "issue": "The cached 6D environment is deterministic in offline mode.",
+      "evidence": [
+        "/Users/maaary/Downloads/DBS-main/core/BGN_MC_Online.py",
+        "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/eval_tflite_96_96_repaired.json"
+      ],
+      "impact": "The env_eval block is only a functional smoke test; it is not strong evidence for stochastic control performance."
+    },
+    {
+      "status": "open limitation",
+      "severity": "medium",
+      "issue": "The repaired 6D fidelity evaluation uses the same state-set family that was also used for INT8 calibration.",
+      "evidence": [
+        "/Users/maaary/Downloads/DBS-main/states_eval_6d_repaired.npy",
+        "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/eval_tflite_96_96_repaired.json",
+        "/Users/maaary/Downloads/DBS-main/scripts/convert_saved_model_to_tflite_int8.py"
+      ],
+      "impact": "The fidelity numbers are useful and quantifiable, but they should be described as in-distribution or calibration-family fidelity unless a held-out 6D state set is added."
+    },
+    {
+      "status": "open nuance",
+      "severity": "high",
+      "issue": "The 96x96 INT8 speedup on ESP32-S3 depends on the default 32 KB data-cache configuration.",
+      "evidence": [
+        "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_fp32_96_96_summary.json",
+        "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_fp32_96_96_dc64k_summary.json",
+        "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_96_96_repaired_32k_summary.json",
+        "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_96_96_dc64k_summary.json",
+        "/Users/maaary/Downloads/DBS-main/espidf_firmware/dbs_espnn_benchmark/sdkconfig"
+      ],
+      "impact": "The paper must not claim a hardware-wide INT8 win without stating the cache/runtime configuration."
+    },
+    {
+      "status": "updated after repaired rerun",
+      "severity": "medium",
+      "issue": "The 80x80 and 128x128 threshold-screening models were rerun with repaired INT8 calibration, but they still only have latency-screening traces rather than full repaired fidelity/control evaluations.",
+      "evidence": [
+        "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_80_80_repaired_32k_summary.json",
+        "/Users/maaary/Downloads/DBS-main/results/esp32/repeats/native_int8_128_128_repaired_32k_summary.json",
+        "/Users/maaary/Downloads/DBS-main/results/larger_models/80_80/bench_int8_80_80_repaired.json",
+        "/Users/maaary/Downloads/DBS-main/results/larger_models/128_128/bench_int8_128_128_repaired.json",
+        "/Users/maaary/Downloads/DBS-main/states_eval_6d_repaired.npy"
+      ],
+      "impact": "The repaired threshold crossover is valid as a latency result, but only the 96x96 candidate currently has the full repaired fidelity/control evidence bundle."
+    },
+    {
+      "status": "fixed",
+      "severity": "medium",
+      "issue": "The desktop TFLite latency helpers could silently append another `_6d` suffix and benchmark a synthesized fallback file.",
+      "evidence": [
+        "/Users/maaary/Downloads/DBS-main/scripts/measure_tflite_fp32_latency.py",
+        "/Users/maaary/Downloads/DBS-main/scripts/measure_tflite_int8_latency.py",
+        "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/bench_fp32_96_96_repaired.json",
+        "/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/bench_int8_96_96_repaired.json"
+      ],
+      "impact": "The repaired desktop traces are valid; older traces should be checked if they relied on custom state-file names."
+    }
+  ]
+}

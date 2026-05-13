@@ -1,0 +1,147 @@
+{
+  "label": "native_int8_80_80_repaired_32k",
+  "mode": "legacy",
+  "runs_requested": 200,
+  "repeats": 5,
+  "port": "/dev/cu.usbmodem101",
+  "aggregate": {
+    "quant_avg_us": {
+      "mean": 5.74,
+      "std": 0.0,
+      "min": 5.74,
+      "max": 5.74
+    },
+    "invoke_avg_us": {
+      "mean": 333.68600000000004,
+      "std": 0.007999999999992725,
+      "min": 333.67,
+      "max": 333.69
+    },
+    "dequant_avg_us": {
+      "mean": 1.278,
+      "std": 0.018330302779823376,
+      "min": 1.26,
+      "max": 1.3
+    },
+    "total_avg_us": {
+      "mean": 340.704,
+      "std": 0.022449944320649565,
+      "min": 340.68,
+      "max": 340.73
+    },
+    "min_invoke_us": {
+      "mean": 333.0,
+      "std": 0.0,
+      "min": 333.0,
+      "max": 333.0
+    },
+    "max_invoke_us": {
+      "mean": 342.0,
+      "std": 0.0,
+      "min": 342.0,
+      "max": 342.0
+    }
+  },
+  "raw_runs": [
+    {
+      "run_index": 1,
+      "json_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run01.json",
+      "log_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run01.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "INT8",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 5.74,
+        "invoke_avg_us": 333.67,
+        "dequant_avg_us": 1.27,
+        "total_avg_us": 340.7,
+        "min_invoke_us": 333,
+        "max_invoke_us": 342
+      }
+    },
+    {
+      "run_index": 2,
+      "json_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run02.json",
+      "log_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run02.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "INT8",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 5.74,
+        "invoke_avg_us": 333.69,
+        "dequant_avg_us": 1.3,
+        "total_avg_us": 340.73,
+        "min_invoke_us": 333,
+        "max_invoke_us": 342
+      }
+    },
+    {
+      "run_index": 3,
+      "json_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run03.json",
+      "log_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run03.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "INT8",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 5.74,
+        "invoke_avg_us": 333.69,
+        "dequant_avg_us": 1.26,
+        "total_avg_us": 340.68,
+        "min_invoke_us": 333,
+        "max_invoke_us": 342
+      }
+    },
+    {
+      "run_index": 4,
+      "json_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run04.json",
+      "log_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run04.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "INT8",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 5.74,
+        "invoke_avg_us": 333.69,
+        "dequant_avg_us": 1.3,
+        "total_avg_us": 340.73,
+        "min_invoke_us": 333,
+        "max_invoke_us": 342
+      }
+    },
+    {
+      "run_index": 5,
+      "json_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run05.json",
+      "log_path": "results/esp32/repeats/native_int8_80_80_repaired_32k_run05.log",
+      "bench_result": {
+        "framework": "espidf",
+        "runtime": "esp-tflite-micro",
+        "runs": 200,
+        "warmup_runs": 20,
+        "model_io": "INT8",
+        "input_dim": 6,
+        "output_dim": 2,
+        "quant_avg_us": 5.74,
+        "invoke_avg_us": 333.69,
+        "dequant_avg_us": 1.26,
+        "total_avg_us": 340.68,
+        "min_invoke_us": 333,
+        "max_invoke_us": 342
+      }
+    }
+  ]
+}
