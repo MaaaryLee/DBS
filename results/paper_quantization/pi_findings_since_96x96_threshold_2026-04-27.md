@@ -1,6 +1,7 @@
 # Quantization Research Summary
 
 Date: 2026-04-15  
+Updated: 2026-04-27  
 This note covers the work completed **after 6D `96x96` emerged as the first tested model size where INT8 became faster than FP32 on the ESP32-S3 deployment path**.
 
 ## 1. Executive Summary
@@ -193,7 +194,7 @@ This showed that:
 - INT8 hardly changed
 - FP32 improved dramatically when it got more cache
 
-Plain-language interpretation:
+Interpretation:
 
 > The `96x96` INT8 model was already small enough that it fit the board's fast memory situation pretty well. FP32 was suffering much more from limited cache. Once FP32 got a larger cache, its latency dropped sharply and the advantage disappeared.
 
@@ -259,7 +260,7 @@ For ESP32-S3, `64 KB` cache, INT8 only:
 - INT8 `10502.520 us`
 - almost unchanged from `32 KB`
 
-### Plain-language interpretation
+### Interpretation
 
 The most likely explanation from these measurements is:
 
@@ -339,7 +340,73 @@ The evidence chain is now much stronger:
 
 ---
 
-## 8. Summary
+## 8. Problem Category 5: Arduino `400x300` Rerun with Cache-Blocking 
+
+This follow-up became necessary once the large-model bottleneck story needed a fresh same-board rerun and a clearer systems debugging trail.
+
+### Problem
+
+After the standalone cache-blocking study suggested that `400x300` was strongly memory-limited, there was still no fresh same-board rerun from the currently attached Arduino Nano ESP32 documenting the full problem-solving path. The board would enumerate over USB, but upload handshakes were unstable, and the Arduino benchmark sketch could not hold a large tensor arena in internal DRAM.
+
+### Question / confusion
+
+The main practical questions were:
+
+- Was the board unavailable, or just switching between runtime USB mode and bootloader USB mode?
+- Could the Arduino benchmark path hold the `400x300` model at all, or was the tensor arena too large for internal DRAM?
+- If cache blocking helped an isolated dense kernel by more than `2x`, would the real board-level `400x300` result still look memory-limited?
+
+### Method
+
+The debugging and measurement workflow on April 27, 2026 was:
+
+1. The Arduino Nano ESP32 was reprobed until both its normal serial endpoint and its bootloader serial endpoint were understood. Uploads started from the normal runtime port `/dev/cu.usbmodem3C8427C3CECC2`, but successful flashing often required finishing on the ESP32-S3 bootloader port `/dev/cu.usbmodem101` once the device re-enumerated.
+2. Fresh Arduino benchmark artifacts were generated for both `400x300 INT8` and `400x300 FP32`.
+3. The larger sketch initially failed to link because a static `256 KB` tensor arena overflowed `.dram0.bss` by `16824` bytes. To make the larger model runnable, the tensor arena was moved out of internal DRAM and into PSRAM by allocating it at runtime with `heap_caps_aligned_alloc(..., MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)` in [dbs_inference.ino](/Users/maaary/Downloads/DBS-main/esp32_firmware/dbs_inference.ino).
+4. After that change, both `400x300` sketches compiled, flashed, and were benchmarked with `3` repeated runs of `200` inferences each on the same connected board.
+5. In parallel, the standalone cache-blocking study was kept separate and reported only as a dense-kernel systems experiment, not as an on-board TFLite Micro speedup.
+
+### Result
+
+Fresh Arduino `400x300` board rerun:
+
+- INT8 invoke `9341.950 us`, total `9349.370 us`
+- FP32 invoke `19320.837 us`, total `19323.813 us`
+- INT8 speedup `2.07x` on invoke and `2.07x` on total
+
+Saved traces:
+
+- [arduino_int8_400_300_retry_20260427_summary.json](/Users/maaary/Downloads/DBS-main/results/esp32/repeats/arduino_int8_400_300_retry_20260427_summary.json)
+- [arduino_fp32_400_300_retry_20260427_summary.json](/Users/maaary/Downloads/DBS-main/results/esp32/repeats/arduino_fp32_400_300_retry_20260427_summary.json)
+
+Standalone cache-blocking `400x300` follow-up:
+
+- best packed tiling seen in this sweep: naive `94637.310 ns` to blocked packed `33255.642 ns`, which is `2.85x`
+- strongest row-major blocking seen in this sweep: naive `92469.136 ns` to blocked row-major `36631.062 ns`, which is `2.52x`
+
+Saved traces:
+
+- [cache_blocking_400x300_rt32_ct32_20260427_manual.json](/Users/maaary/Downloads/DBS-main/results/cache_blocking/cache_blocking_400x300_rt32_ct32_20260427_manual.json)
+- [cache_blocking_400x300_rt8_ct16_20260427_manual.json](/Users/maaary/Downloads/DBS-main/results/cache_blocking/cache_blocking_400x300_rt8_ct16_20260427_manual.json)
+
+### Why this matters
+
+This follow-up strengthens the same basic systems diagnosis:
+
+- the live board rerun still showed only a moderate `400x300` INT8 win, which is consistent with a memory-limited model
+- the isolated dense-kernel study showed that better weight layout and tiling can plausibly unlock larger gains if a custom kernel is ever integrated into firmware
+
+So the new evidence does not overturn the earlier story. It makes the bottleneck explanation more concrete.
+
+### Limitation / reflection
+
+- These fresh April 27, 2026 results came from the Arduino benchmark sketch path, not the native ESP-IDF benchmark path used for the main manuscript claim.
+- The PSRAM-backed tensor arena was a practical way to make `400x300` runnable in the Arduino path, but it also means these absolute latencies should be treated as supporting systems evidence, not a replacement for the native ESP-IDF tables above.
+- The cache-blocking speedups are not yet on-board TFLite Micro speedups. They explain the likely bottleneck and suggest an optimization direction, but they should not be multiplied into the board-level FP32 vs INT8 result until that kernel work is actually integrated into firmware.
+
+---
+
+## 9. Summary
 
 ### Strong enough to show today
 
@@ -349,6 +416,8 @@ The evidence chain is now much stronger:
 - INT8 stayed very close to FP32 on a strict held-out fidelity test.
 - INT8 also stayed very close to FP32 on replayed held-out trajectories.
 - The larger `400x300` model also showed an INT8 speedup on ESP32, but the speedup dropped to `1.88x`.
+- A fresh Arduino rerun on April 27, 2026 kept the `400x300` conclusion intact: INT8 still beat FP32 by about `2.07x` on the connected board.
+- A standalone `400x300` cache-blocking sweep showed `2.52x` to `2.85x` dense-kernel speedups, which supports the interpretation that this large model is memory-limited.
 - Cache configuration matters a lot for interpretation, so the `96x96` result should be framed as a deployment-specific win, not a universal rule.
 
 ### Still missing / must be framed carefully
@@ -357,6 +426,8 @@ The evidence chain is now much stronger:
 - A fresh **closed-loop stochastic control** evaluation, not just replay agreement.
 - If strict replication of the prior paper is required, a careful methods comparison against that paper's exact runtime and memory configuration.
 - Desktop TFLite should stay as supporting context, not a substitute for on-board deployment measurement.
+- The April 27, 2026 Arduino reruns should be treated as supporting systems checks, not replacements for the native ESP-IDF benchmark tables above.
+- The cache-blocking speedups are still standalone kernel results; they are not yet an integrated firmware-side optimization.
 
 ### Questions for advisor:
 

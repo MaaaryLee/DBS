@@ -18,6 +18,8 @@ If you only need the most important result files:
   native ESP32 INT8 result for the main candidate
 - [larger_models/96_96/eval_tflite_96_96_strict_holdout.json](/Users/maaary/Downloads/DBS-main/results/larger_models/96_96/eval_tflite_96_96_strict_holdout.json)
   strict held-out fidelity and replay-agreement evidence
+- [cache_blocking/README.md](/Users/maaary/Downloads/DBS-main/results/cache_blocking/README.md)
+  standalone C++ cache-blocking baseline for dense-layer optimization
 
 ## Folder Meanings
 
@@ -46,6 +48,13 @@ On-device benchmark traces.
 ### `strict_eval/`
 
 Strict calibration / held-out split metadata and replay episodes used to support the repaired fidelity and replay-based control analyses.
+
+### `cache_blocking/`
+
+Standalone C++ dense-kernel experiments for cache blocking / tiling.
+
+- useful for testing custom dense-layer ideas before touching the ESP32 runtime
+- not a replacement for the native ESP32 end-to-end benchmark
 
 ## How To Read The Results
 

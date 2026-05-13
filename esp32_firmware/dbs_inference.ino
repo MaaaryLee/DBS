@@ -28,14 +28,19 @@
 #include <tensorflow/lite/micro/micro_mutable_op_resolver.h>
 #include <tensorflow/lite/schema/schema_generated.h>
 
+#include <esp32-hal-psram.h>
 #include <esp_heap_caps.h>
 
 namespace {
 
-constexpr int kTensorArenaSize = 16 * 1024;
+// Larger 6D models such as 400x300 need substantially more workspace than 96x96.
+constexpr int kTensorArenaSize = 256 * 1024;
+constexpr int kTensorArenaAlignment = 16;
 constexpr int kMaxObservationDim = 8;
+constexpr unsigned long kSerialAttachWaitMs = 3000;
+constexpr unsigned long kSerialSettleDelayMs = 250;
 
-alignas(16) uint8_t tensor_arena[kTensorArenaSize];
+uint8_t* tensor_arena = nullptr;
 
 }  // namespace
 
@@ -130,14 +135,14 @@ void resetTimingStats() {
 }
 
 void printCurrentObservation() {
-  Serial.print("Current observation: [");
+  Serial.print("OBS ");
   for (int i = 0; i < input_feature_count; ++i) {
     Serial.print(current_observation[i], 6);
     if (i + 1 < input_feature_count) {
-      Serial.print(", ");
+      Serial.print(" ");
     }
   }
-  Serial.println("]");
+  Serial.println();
 }
 
 void setDefaultObservation() {
@@ -156,30 +161,25 @@ void setDefaultObservation() {
 }
 
 void printHelp() {
-  Serial.println("\nCommands:");
-  Serial.println("  help");
-  Serial.println("  info");
-  Serial.println("  defaults");
-  Serial.println("  sample <v1> <v2> ... <vN>");
-  Serial.println("  run");
-  Serial.println("  bench <count>");
+  Serial.println("HELP commands=help,info,defaults,sample,run,bench");
 }
 
 void printModelInfo() {
-  Serial.println("\n--- Model Info ---");
-  Serial.printf("Embedded model size: %u bytes\n", dbs_model_len);
-  Serial.printf("Input shape: [%d, %d]\n",
-                input_tensor->dims->data[0], input_tensor->dims->data[input_tensor->dims->size - 1]);
-  Serial.printf("Output shape: [%d, %d]\n",
-                output_tensor->dims->data[0], output_tensor->dims->data[output_tensor->dims->size - 1]);
-  Serial.printf("Input tensor type: %d\n", static_cast<int>(input_tensor->type));
-  Serial.printf("Output tensor type: %d\n", static_cast<int>(output_tensor->type));
-  Serial.printf("Model IO mode: %s\n", modelIOTypeName());
+  Serial.printf("INFO model_len=%u input_dim=%d output_dim=%d input_type=%d output_type=%d model_io=%s tensor_arena_bytes=%d\n",
+                dbs_model_len,
+                input_tensor->dims->data[input_tensor->dims->size - 1],
+                output_tensor->dims->data[output_tensor->dims->size - 1],
+                static_cast<int>(input_tensor->type),
+                static_cast<int>(output_tensor->type),
+                modelIOTypeName(),
+                kTensorArenaSize);
   if (model_io_type == kModelIOInt8) {
-    Serial.printf("Input quant params : scale=%.10f zero_point=%d\n", input_scale, input_zero_point);
-    Serial.printf("Output quant params: scale=%.10f zero_point=%d\n", output_scale, output_zero_point);
+    Serial.printf("INFO_INT8 input_scale=%.10f input_zero_point=%d output_scale=%.10f output_zero_point=%d\n",
+                  input_scale,
+                  input_zero_point,
+                  output_scale,
+                  output_zero_point);
   }
-  Serial.printf("Tensor arena size: %d bytes\n", kTensorArenaSize);
   printCurrentObservation();
 }
 
@@ -189,14 +189,14 @@ void printMemoryStats(const char* label) {
   const size_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
   const int32_t heap_delta = static_cast<int32_t>(free_heap_before) - static_cast<int32_t>(free_heap_after);
 
-  Serial.printf("\n--- Memory Stats (%s) ---\n", label);
-  Serial.printf("Free heap: %u bytes (%.2f KB)\n",
+  Serial.printf("MEM label=%s free_heap=%u free_heap_kb=%.2f",
+                label,
                 static_cast<unsigned int>(free_heap), free_heap / 1024.0f);
-  Serial.printf("Min free heap: %u bytes (%.2f KB)\n",
+  Serial.printf(" min_free_heap=%u min_free_heap_kb=%.2f",
                 static_cast<unsigned int>(min_free_heap), min_free_heap / 1024.0f);
-  Serial.printf("Largest free block: %u bytes (%.2f KB)\n",
+  Serial.printf(" largest_block=%u largest_block_kb=%.2f",
                 static_cast<unsigned int>(largest_block), largest_block / 1024.0f);
-  Serial.printf("Heap delta (before - after): %ld bytes (%.2f KB)\n",
+  Serial.printf(" heap_delta=%ld heap_delta_kb=%.2f\n",
                 static_cast<long>(heap_delta), heap_delta / 1024.0f);
 }
 
@@ -224,25 +224,24 @@ void printTimingSummary() {
   const float avg_total_us = (total_inferences > 0) ? (static_cast<float>(total_total_time_us) / total_inferences) : 0.0f;
   const float estimated_energy_mj = (avg_total_us / 1000000.0f) * 264.0f;
 
-  Serial.println("\n--- Timing Summary ---");
-  Serial.printf("Total inferences: %lu\n", total_inferences);
-  Serial.printf("Quantize avg: %.2f us (min=%lu, max=%lu)\n",
+  Serial.printf("SUMMARY total_inferences=%lu", total_inferences);
+  Serial.printf(" quant_avg_us=%.2f quant_min_us=%lu quant_max_us=%lu",
                 avg_quant_us,
                 static_cast<unsigned long>(min_quant_time_us == UINT32_MAX ? 0 : min_quant_time_us),
                 static_cast<unsigned long>(max_quant_time_us));
-  Serial.printf("Invoke   avg: %.2f us (min=%lu, max=%lu)\n",
+  Serial.printf(" invoke_avg_us=%.2f invoke_min_us=%lu invoke_max_us=%lu",
                 avg_invoke_us,
                 static_cast<unsigned long>(min_invoke_time_us == UINT32_MAX ? 0 : min_invoke_time_us),
                 static_cast<unsigned long>(max_invoke_time_us));
-  Serial.printf("Dequant  avg: %.2f us (min=%lu, max=%lu)\n",
+  Serial.printf(" dequant_avg_us=%.2f dequant_min_us=%lu dequant_max_us=%lu",
                 avg_dequant_us,
                 static_cast<unsigned long>(min_dequant_time_us == UINT32_MAX ? 0 : min_dequant_time_us),
                 static_cast<unsigned long>(max_dequant_time_us));
-  Serial.printf("Total    avg: %.2f us (min=%lu, max=%lu)\n",
+  Serial.printf(" total_avg_us=%.2f total_min_us=%lu total_max_us=%lu",
                 avg_total_us,
                 static_cast<unsigned long>(min_total_time_us == UINT32_MAX ? 0 : min_total_time_us),
                 static_cast<unsigned long>(max_total_time_us));
-  Serial.printf("Estimated energy per inference: %.6f mJ\n", estimated_energy_mj);
+  Serial.printf(" estimated_energy_mj=%.6f\n", estimated_energy_mj);
 }
 
 bool writeObservationToInputTensor(const float* observation) {
@@ -260,7 +259,7 @@ bool writeObservationToInputTensor(const float* observation) {
       input_tensor->data.int8[i] = static_cast<int8_t>(q);
     }
   } else {
-    Serial.println("Unsupported model IO mode.");
+    Serial.println("ERROR unsupported_model_io");
     return false;
   }
 
@@ -278,7 +277,7 @@ bool readOutputFromTensor(float* frequency, float* amplitude) {
     *frequency = (static_cast<int32_t>(output_tensor->data.int8[0]) - output_zero_point) * output_scale;
     *amplitude = (static_cast<int32_t>(output_tensor->data.int8[1]) - output_zero_point) * output_scale;
   } else {
-    Serial.println("Unsupported model IO mode.");
+    Serial.println("ERROR unsupported_model_io");
     return false;
   }
 
@@ -288,11 +287,11 @@ bool readOutputFromTensor(float* frequency, float* amplitude) {
 
 bool runInference(const float* observation, bool verbose) {
   if (input_feature_count <= 0 || input_feature_count > kMaxObservationDim) {
-    Serial.printf("Input dimension %d is unsupported by this sketch.\n", input_feature_count);
+    Serial.printf("ERROR unsupported_input_dim=%d max_supported=%d\n", input_feature_count, kMaxObservationDim);
     return false;
   }
   if (output_feature_count < 2) {
-    Serial.println("Expected at least 2 output features.");
+    Serial.println("ERROR expected_at_least_2_outputs");
     return false;
   }
 
@@ -308,7 +307,7 @@ bool runInference(const float* observation, bool verbose) {
   free_heap_after = esp_get_free_heap_size();
 
   if (invoke_status != kTfLiteOk) {
-    Serial.println("Invoke() failed!");
+    Serial.println("ERROR invoke_failed");
     return false;
   }
 
@@ -322,10 +321,11 @@ bool runInference(const float* observation, bool verbose) {
   if (verbose) {
     const float dbs_freq = 185.0f * ((last_frequency + 1.0f) / 2.0f);
     const float dbs_amp = 5000.0f * ((last_amplitude + 1.0f) / 2.0f);
-    Serial.println("\n--- Inference Result ---");
-    Serial.printf("Frequency action: %.6f -> DBS %.2f Hz\n", last_frequency, dbs_freq);
-    Serial.printf("Amplitude action: %.6f -> DBS %.2f mA\n", last_amplitude, dbs_amp);
-    Serial.printf("Quantize=%lu us Invoke=%lu us Dequant=%lu us Total=%lu us\n",
+    Serial.printf("RUN_RESULT out0=%.6f out1=%.6f dbs_freq_hz=%.2f dbs_amp=%.2f quant_us=%lu invoke_us=%lu dequant_us=%lu total_us=%lu\n",
+                  last_frequency,
+                  last_amplitude,
+                  dbs_freq,
+                  dbs_amp,
                   static_cast<unsigned long>(quant_time_us),
                   static_cast<unsigned long>(invoke_time_us),
                   static_cast<unsigned long>(dequant_time_us),
@@ -348,14 +348,14 @@ bool parseObservationCommand(const String& command) {
   int values_read = 0;
   while ((token = strtok(nullptr, " ,\t")) != nullptr) {
     if (values_read >= input_feature_count) {
-      Serial.printf("Too many values. Model expects %d features.\n", input_feature_count);
+      Serial.printf("ERROR too_many_values expected=%d\n", input_feature_count);
       return false;
     }
     current_observation[values_read++] = static_cast<float>(atof(token));
   }
 
   if (values_read != input_feature_count) {
-    Serial.printf("Expected %d values, received %d.\n", input_feature_count, values_read);
+    Serial.printf("ERROR wrong_value_count expected=%d received=%d\n", input_feature_count, values_read);
     return false;
   }
 
@@ -363,8 +363,7 @@ bool parseObservationCommand(const String& command) {
     current_observation[i] = 0.0f;
   }
 
-  Serial.println("Observation updated.");
-  printCurrentObservation();
+  Serial.printf("OBS_OK input_dim=%d\n", input_feature_count);
   return true;
 }
 
@@ -391,21 +390,21 @@ void printBenchResult(unsigned long runs) {
 
 void runBenchmark(unsigned long runs) {
   if (runs == 0) {
-    Serial.println("Benchmark count must be > 0.");
+    Serial.println("ERROR benchmark_count_must_be_positive");
     return;
   }
 
   resetTimingStats();
   for (unsigned long i = 0; i < runs; ++i) {
     if (!runInference(current_observation, false)) {
-      Serial.printf("Benchmark aborted at iteration %lu.\n", i);
+      Serial.printf("ERROR benchmark_aborted iteration=%lu\n", i);
       return;
     }
   }
 
-  printTimingSummary();
   printBenchResult(runs);
   Serial.println("BENCH_DONE");
+  Serial.flush();
 }
 
 void handleSerialCommand(String command) {
@@ -426,8 +425,7 @@ void handleSerialCommand(String command) {
 
   if (command.equalsIgnoreCase("defaults")) {
     setDefaultObservation();
-    Serial.println("Default observation restored.");
-    printCurrentObservation();
+    Serial.printf("DEFAULTS_OK input_dim=%d\n", input_feature_count);
     return;
   }
 
@@ -454,22 +452,31 @@ void handleSerialCommand(String command) {
     return;
   }
 
-  Serial.print("Unknown command: ");
+  Serial.print("ERROR unknown_command=");
   Serial.println(command);
-  printHelp();
+}
+
+void printReadyLine() {
+  Serial.printf("READY runtime=arduino library=chirale_tflm model_io=%s input_dim=%d output_dim=%d tensor_arena_bytes=%d\n",
+                modelIOTypeName(),
+                input_feature_count,
+                output_feature_count,
+                kTensorArenaSize);
+  Serial.flush();
 }
 
 void setup() {
   Serial.begin(115200);
   Serial.setTimeout(50);
-  delay(1000);
-
-  Serial.println("\n=== ESP32 DBS Inference Benchmark ===");
-  Serial.println("Initializing TensorFlow Lite Micro...");
+  unsigned long serial_wait_start = millis();
+  while (!Serial && (millis() - serial_wait_start < kSerialAttachWaitMs)) {
+    delay(10);
+  }
+  delay(kSerialSettleDelayMs);
 
   tflite_model = tflite::GetModel(dbs_model);
   if (tflite_model->version() != TFLITE_SCHEMA_VERSION) {
-    Serial.printf("Model schema version %d not supported. Supported is %d.\n",
+    Serial.printf("ERROR schema_version=%d expected=%d\n",
                   tflite_model->version(), TFLITE_SCHEMA_VERSION);
     return;
   }
@@ -478,12 +485,24 @@ void setup() {
     return;
   }
 
+  if (!psramFound()) {
+    Serial.println("ERROR psram_not_found");
+    return;
+  }
+
+  tensor_arena = static_cast<uint8_t*>(
+      heap_caps_aligned_alloc(kTensorArenaAlignment, kTensorArenaSize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+  if (tensor_arena == nullptr) {
+    Serial.printf("ERROR tensor_arena_alloc_failed bytes=%d\n", kTensorArenaSize);
+    return;
+  }
+
   static tflite::MicroInterpreter static_interpreter(
       tflite_model, resolver, tensor_arena, kTensorArenaSize);
   interpreter = &static_interpreter;
 
   if (interpreter->AllocateTensors() != kTfLiteOk) {
-    Serial.println("AllocateTensors() failed!");
+    Serial.println("ERROR allocate_tensors_failed");
     return;
   }
 
@@ -494,7 +513,7 @@ void setup() {
   output_feature_count = output_tensor->dims->data[output_tensor->dims->size - 1];
 
   if (input_feature_count <= 0 || input_feature_count > kMaxObservationDim) {
-    Serial.printf("Input dimension %d exceeds sketch limit (%d).\n",
+    Serial.printf("ERROR input_dim=%d max_supported=%d\n",
                   input_feature_count, kMaxObservationDim);
     return;
   }
@@ -514,9 +533,7 @@ void setup() {
   setDefaultObservation();
   resetTimingStats();
 
-  printModelInfo();
-  printHelp();
-  Serial.println("\nReady. Send `run` or `bench 200`.");
+  printReadyLine();
 }
 
 void loop() {
